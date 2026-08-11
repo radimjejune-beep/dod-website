@@ -12,6 +12,7 @@ export default function ParticipantProfile() {
   const [activities, setActivities] = useState([])
   const [events, setEvents] = useState([])
   const [extraActivities, setExtraActivities] = useState([])
+  const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showActivityForm, setShowActivityForm] = useState(false)
@@ -68,9 +69,7 @@ export default function ParticipantProfile() {
         setProfile(data)
       }
 
-      // ============================================
-      // ЗАГРУЗКА ДАННЫХ УЧАСТНИКА ИЗ profiles
-      // ============================================
+      // Загружаем участника из profiles
       const { data: participantData, error: pError } = await supabase
         .from('profiles')
         .select(`
@@ -103,9 +102,7 @@ export default function ParticipantProfile() {
         status: participantData.status || 'active'
       })
 
-      // ============================================
-      // ЗАГРУЗКА ДОСТИЖЕНИЙ
-      // ============================================
+      // Загружаем достижения
       const { data: achievementsData } = await supabase
         .from('user_achievements')
         .select(`
@@ -116,9 +113,7 @@ export default function ParticipantProfile() {
         .order('earned_at', { ascending: false })
       setAchievements(achievementsData || [])
 
-      // ============================================
-      // ЗАГРУЗКА МЕРОПРИЯТИЙ УЧАСТНИКА
-      // ============================================
+      // Загружаем мероприятия участника
       const { data: activitiesData } = await supabase
         .from('event_participants')
         .select(`
@@ -129,18 +124,29 @@ export default function ParticipantProfile() {
         .order('registered_at', { ascending: false })
       setActivities(activitiesData || [])
 
-      // ============================================
-      // ЗАГРУЗКА ВСЕХ МЕРОПРИЯТИЙ ДЛЯ ВЫБОРА
-      // ============================================
+      // Загружаем все мероприятия для выбора
       const { data: eventsData } = await supabase
         .from('events')
         .select('id, title, event_date')
         .order('event_date', { ascending: false })
       setEvents(eventsData || [])
 
-      // ============================================
-      // ЗАГРУЗКА ДОПОЛНИТЕЛЬНЫХ КРУЖКОВ
-      // ============================================
+      // ============================================================
+      // ЗАГРУЗКА ОЦЕНОК (REVIEWS)
+      // ============================================================
+      const { data: reviewsData } = await supabase
+        .from('participation_reviews')
+        .select(`
+          *,
+          events:event_id (id, title, event_date, type)
+        `)
+        .eq('participant_id', id)
+        .order('updated_at', { ascending: false })
+
+      console.log('📊 Оценки участника:', reviewsData)
+      setReviews(reviewsData || [])
+
+      // Загружаем дополнительные кружки
       const { data: extraActivitiesData } = await supabase
         .from('extra_activities')
         .select('*')
@@ -178,7 +184,6 @@ export default function ParticipantProfile() {
 
       // Обновляем привязку к клубу
       if (form.club_id) {
-        // Проверяем, есть ли уже связь
         const { data: existing } = await supabase
           .from('club_participants')
           .select('id')
@@ -187,13 +192,11 @@ export default function ParticipantProfile() {
           .maybeSingle()
 
         if (!existing) {
-          // Удаляем старую привязку
           await supabase
             .from('club_participants')
             .delete()
             .eq('profile_id', id)
 
-          // Создаем новую
           await supabase
             .from('club_participants')
             .insert([{
@@ -214,9 +217,9 @@ export default function ParticipantProfile() {
     setSaving(false)
   }
 
-  // ============================================
+  // ============================================================
   // ДОПОЛНИТЕЛЬНЫЕ КРУЖКИ
-  // ============================================
+  // ============================================================
   const handleExtraActivitySubmit = async (e) => {
     e.preventDefault()
     setMessage('')
@@ -313,9 +316,9 @@ export default function ParticipantProfile() {
     }
   }
 
-  // ============================================
+  // ============================================================
   // МЕРОПРИЯТИЯ УЧАСТНИКА
-  // ============================================
+  // ============================================================
   const handleAddActivity = async (e) => {
     e.preventDefault()
     setMessage('')
@@ -694,7 +697,207 @@ export default function ParticipantProfile() {
         )}
 
         {/* ============================================================
-            НОВЫЙ РАЗДЕЛ: ДОПОЛНИТЕЛЬНЫЕ КРУЖКИ И УВЛЕЧЕНИЯ
+            ОЦЕНКИ (REVIEWS) — ВСЕГДА ВИДЕН
+            ============================================================ */}
+        <div className="card" style={{ marginBottom: '24px', background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #E2E7EF' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#0B1F3A' }}>
+              📊 Оценки за мероприятия
+            </h3>
+            <span style={{ fontSize: '13px', color: '#667085' }}>
+              {reviews.length} оценок
+            </span>
+          </div>
+
+          {reviews.length === 0 ? (
+            <div style={{ padding: '30px', textAlign: 'center', background: '#F4F6F9', borderRadius: '10px' }}>
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>📝</div>
+              <p style={{ color: '#667085', fontSize: '16px' }}>Оценок пока нет</p>
+              <p style={{ fontSize: '13px', color: '#98A2B3', marginTop: '4px' }}>
+                Оценки появляются после мероприятий с участием тьюторов
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {reviews.map((review) => (
+                <div
+                  key={review.id}
+                  style={{
+                    padding: '16px',
+                    background: '#F8FAFC',
+                    borderRadius: '10px',
+                    border: '1px solid #E2E7EF',
+                    borderLeft: review.is_final ? '4px solid #C9A227' : '4px solid #174A7E'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <div style={{ fontWeight: '600', color: '#0B1F3A' }}>
+                        {review.events?.title || 'Мероприятие'}
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#667085' }}>
+                        📅 {review.events?.event_date ? new Date(review.events.event_date).toLocaleDateString('ru-RU') : 'Дата не указана'}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {review.is_final && (
+                        <span style={{
+                          padding: '2px 12px',
+                          borderRadius: '12px',
+                          fontSize: '10px',
+                          fontWeight: '600',
+                          background: '#FBF4DC',
+                          color: '#8A6A00'
+                        }}>
+                          ⭐ Финальная
+                        </span>
+                      )}
+                      <span style={{
+                        padding: '2px 12px',
+                        borderRadius: '12px',
+                        fontSize: '10px',
+                        fontWeight: '600',
+                        background: review.status === 'approved' ? '#E8F5EF' : '#FBF4DC',
+                        color: review.status === 'approved' ? '#16845B' : '#8A6A00'
+                      }}>
+                        {review.status === 'approved' ? '✅ Утверждено' : '⏳ На проверке'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Показатели */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+                    gap: '8px',
+                    marginTop: '12px',
+                    paddingTop: '12px',
+                    borderTop: '1px solid #E2E7EF'
+                  }}>
+                    {review.engagement && (
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#98A2B3' }}>Активность</div>
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: review.engagement === 'active' ? '#16845B' :
+                                 review.engagement === 'moderate' ? '#8A6A00' : '#B3262E'
+                        }}>
+                          {review.engagement === 'active' ? '🟢 Активно' :
+                           review.engagement === 'moderate' ? '🟡 Умеренно' : '🔴 Пассивно'}
+                        </div>
+                      </div>
+                    )}
+                    {review.teamwork && (
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#98A2B3' }}>Работа в команде</div>
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: review.teamwork === 'excellent' ? '#16845B' :
+                                 review.teamwork === 'good' ? '#8A6A00' : '#B3262E'
+                        }}>
+                          {review.teamwork === 'excellent' ? '⭐ Отлично' :
+                           review.teamwork === 'good' ? '👍 Хорошо' : '📈 Развивается'}
+                        </div>
+                      </div>
+                    )}
+                    {review.initiative && (
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#98A2B3' }}>Инициатива</div>
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: review.initiative === 'high' ? '#16845B' :
+                                 review.initiative === 'average' ? '#8A6A00' : '#B3262E'
+                        }}>
+                          {review.initiative === 'high' ? '🚀 Высокая' :
+                           review.initiative === 'average' ? '📊 Средняя' : '📉 Низкая'}
+                        </div>
+                      </div>
+                    )}
+                    {review.communication && (
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#98A2B3' }}>Коммуникация</div>
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: review.communication === 'confident' ? '#16845B' :
+                                 review.communication === 'developing' ? '#8A6A00' : '#B3262E'
+                        }}>
+                          {review.communication === 'confident' ? '💬 Уверенная' :
+                           review.communication === 'developing' ? '📈 Развивается' : '🆘 Требует поддержки'}
+                        </div>
+                      </div>
+                    )}
+                    {review.responsibility && (
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#98A2B3' }}>Ответственность</div>
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: review.responsibility === 'reliable' ? '#16845B' :
+                                 review.responsibility === 'average' ? '#8A6A00' : '#B3262E'
+                        }}>
+                          {review.responsibility === 'reliable' ? '✅ Надёжный' :
+                           review.responsibility === 'average' ? '📊 Средний' : '⚠️ Требует внимания'}
+                        </div>
+                      </div>
+                    )}
+                    {review.overall_impression && (
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#98A2B3' }}>Общее впечатление</div>
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: review.overall_impression === 'excellent' ? '#16845B' :
+                                 review.overall_impression === 'good' ? '#8A6A00' : 
+                                 review.overall_impression === 'satisfactory' ? '#C9A227' : '#B3262E'
+                        }}>
+                          {review.overall_impression === 'excellent' ? '🌟 Отличное' :
+                           review.overall_impression === 'good' ? '👍 Хорошее' :
+                           review.overall_impression === 'satisfactory' ? '👌 Удовлетворительное' : '📈 Требует развития'}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Комментарии */}
+                  {(review.comment || review.strengths || review.areas_for_growth) && (
+                    <div style={{
+                      marginTop: '12px',
+                      paddingTop: '12px',
+                      borderTop: '1px solid #E2E7EF'
+                    }}>
+                      {review.comment && (
+                        <div style={{ fontSize: '14px', color: '#475467', marginBottom: '4px' }}>
+                          💬 {review.comment}
+                        </div>
+                      )}
+                      {review.strengths && (
+                        <div style={{ fontSize: '13px', color: '#16845B' }}>
+                          ✅ Сильные стороны: {review.strengths}
+                        </div>
+                      )}
+                      {review.areas_for_growth && (
+                        <div style={{ fontSize: '13px', color: '#B3262E' }}>
+                          📈 Зоны роста: {review.areas_for_growth}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div style={{ fontSize: '11px', color: '#98A2B3', marginTop: '8px' }}>
+                    🕐 Обновлено: {new Date(review.updated_at).toLocaleString('ru-RU')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ============================================================
+            ДОПОЛНИТЕЛЬНЫЕ КРУЖКИ
             ============================================================ */}
         <div className="card" style={{ marginBottom: '24px', background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #E2E7EF' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
@@ -720,7 +923,6 @@ export default function ParticipantProfile() {
             )}
           </div>
 
-          {/* ФОРМА ДОБАВЛЕНИЯ КРУЖКА */}
           {showExtraActivityForm && canManage && (
             <div style={{ padding: '20px', background: '#F4F6F9', borderRadius: '12px', marginBottom: '16px' }}>
               <h4 style={{ fontSize: '15px', fontWeight: '600', color: '#0B1F3A', marginBottom: '12px' }}>
@@ -737,7 +939,6 @@ export default function ParticipantProfile() {
                       onChange={(e) => setExtraActivityForm({ ...extraActivityForm, name: e.target.value })}
                       required
                       placeholder="Английский клуб"
-                      style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #D5DCE7', borderRadius: '8px' }}
                     />
                   </div>
 
@@ -747,7 +948,6 @@ export default function ParticipantProfile() {
                       className="form-select"
                       value={extraActivityForm.type}
                       onChange={(e) => setExtraActivityForm({ ...extraActivityForm, type: e.target.value })}
-                      style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #D5DCE7', borderRadius: '8px', background: 'white' }}
                     >
                       {Object.entries(activityTypes).map(([key, label]) => (
                         <option key={key} value={key}>{label}</option>
@@ -763,7 +963,6 @@ export default function ParticipantProfile() {
                       value={extraActivityForm.organization}
                       onChange={(e) => setExtraActivityForm({ ...extraActivityForm, organization: e.target.value })}
                       placeholder="Дом детского творчества"
-                      style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #D5DCE7', borderRadius: '8px' }}
                     />
                   </div>
 
@@ -775,7 +974,6 @@ export default function ParticipantProfile() {
                       value={extraActivityForm.teacher}
                       onChange={(e) => setExtraActivityForm({ ...extraActivityForm, teacher: e.target.value })}
                       placeholder="Иванова М.А."
-                      style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #D5DCE7', borderRadius: '8px' }}
                     />
                   </div>
 
@@ -787,7 +985,6 @@ export default function ParticipantProfile() {
                       value={extraActivityForm.schedule}
                       onChange={(e) => setExtraActivityForm({ ...extraActivityForm, schedule: e.target.value })}
                       placeholder="Вт/Чт 15:00-16:30"
-                      style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #D5DCE7', borderRadius: '8px' }}
                     />
                   </div>
 
@@ -798,7 +995,6 @@ export default function ParticipantProfile() {
                       className="form-input"
                       value={extraActivityForm.start_date}
                       onChange={(e) => setExtraActivityForm({ ...extraActivityForm, start_date: e.target.value })}
-                      style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #D5DCE7', borderRadius: '8px' }}
                     />
                   </div>
 
@@ -809,7 +1005,6 @@ export default function ParticipantProfile() {
                       className="form-input"
                       value={extraActivityForm.end_date}
                       onChange={(e) => setExtraActivityForm({ ...extraActivityForm, end_date: e.target.value })}
-                      style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #D5DCE7', borderRadius: '8px' }}
                     />
                   </div>
 
@@ -819,7 +1014,6 @@ export default function ParticipantProfile() {
                       className="form-select"
                       value={extraActivityForm.is_active ? 'true' : 'false'}
                       onChange={(e) => setExtraActivityForm({ ...extraActivityForm, is_active: e.target.value === 'true' })}
-                      style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #D5DCE7', borderRadius: '8px', background: 'white' }}
                     >
                       <option value="true">🟢 Да</option>
                       <option value="false">🔴 Нет</option>
@@ -835,7 +1029,6 @@ export default function ParticipantProfile() {
                     value={extraActivityForm.achievements}
                     onChange={(e) => setExtraActivityForm({ ...extraActivityForm, achievements: e.target.value })}
                     placeholder="Победитель городской олимпиады"
-                    style={{ width: '100%', padding: '8px 12px', border: '1.5px solid #D5DCE7', borderRadius: '8px' }}
                   />
                 </div>
 
@@ -847,7 +1040,6 @@ export default function ParticipantProfile() {
                     value={extraActivityForm.comment}
                     onChange={(e) => setExtraActivityForm({ ...extraActivityForm, comment: e.target.value })}
                     placeholder="Дополнительная информация о кружке..."
-                    style={{ resize: 'vertical', width: '100%', padding: '8px 12px', border: '1.5px solid #D5DCE7', borderRadius: '8px' }}
                   />
                 </div>
 
@@ -886,7 +1078,6 @@ export default function ParticipantProfile() {
             </div>
           )}
 
-          {/* СПИСОК КРУЖКОВ */}
           {extraActivities.length === 0 ? (
             <div style={{ padding: '20px', textAlign: 'center', background: '#F4F6F9', borderRadius: '10px' }}>
               <p style={{ color: '#667085' }}>Дополнительных кружков и увлечений пока нет</p>
@@ -1139,7 +1330,6 @@ export default function ParticipantProfile() {
             )}
           </div>
 
-          {/* ФОРМА ДОБАВЛЕНИЯ АКТИВНОСТИ */}
           {showActivityForm && canManage && (
             <div style={{ padding: '16px', background: '#F4F6F9', borderRadius: '10px', marginBottom: '16px' }}>
               <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#0B1F3A', marginBottom: '12px' }}>

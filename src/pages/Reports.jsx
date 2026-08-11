@@ -43,7 +43,6 @@ export default function Reports() {
         .select('*')
         .order('name')
 
-      // Если координатор КЮДа — показываем только его клуб
       if (profile?.role === 'club_coordinator') {
         const { data: coordinatorData } = await supabase
           .from('club_coordinators')
@@ -70,7 +69,6 @@ export default function Reports() {
         `)
         .order('report_month', { ascending: false })
 
-      // Если координатор КЮДа — показываем только отчёты его клуба
       if (profile?.role === 'club_coordinator') {
         const { data: coordinatorData } = await supabase
           .from('club_coordinators')
@@ -199,8 +197,11 @@ export default function Reports() {
     setLoading(false)
   }
 
+  // ============================================================
+  // УДАЛЕНИЕ ОТЧЁТА (для координатора КЮДа, координатора движения и админа)
+  // ============================================================
   const handleDelete = async (id) => {
-    if (!confirm('Удалить отчёт?')) return
+    if (!confirm('Удалить этот отчёт? Это действие нельзя отменить.')) return
 
     setLoading(true)
 
@@ -214,12 +215,20 @@ export default function Reports() {
 
       setMessage('✅ Отчёт удалён!')
       loadData()
+      setShowModal(false)
       setTimeout(() => setMessage(''), 3000)
     } catch (err) {
       setMessage('❌ Ошибка: ' + err.message)
     }
     setLoading(false)
   }
+
+  // ============================================================
+  // ПРОВЕРКА ПРАВ НА УДАЛЕНИЕ
+  // ============================================================
+  const canDelete = profile?.role === 'admin' || 
+                     profile?.role === 'movement_coordinator' || 
+                     profile?.role === 'club_coordinator'
 
   const canCreate = profile?.role === 'admin' || 
                     profile?.role === 'movement_coordinator' || 
@@ -399,6 +408,9 @@ export default function Reports() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {reports.map((report) => {
                 const status = getStatusBadge(report.status)
+                const isEditable = canCreate && report.status === 'draft'
+                const isDeletable = canDelete && (report.status === 'draft' || report.status === 'rejected')
+                
                 return (
                   <div
                     key={report.id}
@@ -417,8 +429,8 @@ export default function Reports() {
                       setShowModal(true)
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: '600', fontSize: '16px', color: '#0B1F3A' }}>
                           {report.report_month 
                             ? new Date(report.report_month).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) 
@@ -436,7 +448,7 @@ export default function Reports() {
                           </div>
                         )}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <span style={{
                           fontSize: '10px',
                           fontWeight: '600',
@@ -447,7 +459,9 @@ export default function Reports() {
                         }}>
                           {status.label}
                         </span>
-                        {canCreate && report.status === 'draft' && (
+                        
+                        {/* РЕДАКТИРОВАНИЕ */}
+                        {isEditable && (
                           <button
                             className="btn btn-secondary"
                             style={{ padding: '4px 10px', fontSize: '12px' }}
@@ -467,6 +481,8 @@ export default function Reports() {
                             ✏️
                           </button>
                         )}
+                        
+                        {/* ОТПРАВКА НА ПРОВЕРКУ */}
                         {report.status === 'draft' && canCreate && (
                           <button
                             className="btn btn-success"
@@ -477,6 +493,20 @@ export default function Reports() {
                             }}
                           >
                             📤 Отправить
+                          </button>
+                        )}
+                        
+                        {/* УДАЛЕНИЕ (для координатора КЮДа, координатора движения и админа) */}
+                        {isDeletable && (
+                          <button
+                            className="btn btn-danger"
+                            style={{ padding: '4px 10px', fontSize: '12px' }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDelete(report.id)
+                            }}
+                          >
+                            🗑️
                           </button>
                         )}
                       </div>
@@ -645,6 +675,19 @@ export default function Reports() {
                   }}
                 >
                   🔄 Вернуть на доработку
+                </button>
+              </div>
+            )}
+
+            {/* КНОПКА УДАЛЕНИЯ В МОДАЛКЕ */}
+            {canDelete && (selectedReport.status === 'draft' || selectedReport.status === 'rejected') && (
+              <div style={{ marginTop: '16px' }}>
+                <button
+                  className="btn btn-danger"
+                  style={{ width: '100%' }}
+                  onClick={() => handleDelete(selectedReport.id)}
+                >
+                  🗑️ Удалить отчёт
                 </button>
               </div>
             )}

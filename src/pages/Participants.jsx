@@ -71,7 +71,7 @@ export default function Participants() {
       .from('profiles')
       .select(`
         *,
-        club_participants!inner (
+        club_participants (
           club_id,
           clubs:club_id (
             id,
@@ -84,13 +84,7 @@ export default function Participants() {
 
     const role = profileData?.role || profile?.role
 
-    // ============================================
-    // ПРАВИЛА ДОСТУПА:
-    // - club_coordinator → только участники своего клуба
-    // - movement_coordinator → все участники (с фильтром по клубам)
-    // - admin → все участники (с фильтром по клубам)
-    // - tutor → все участники (с фильтром по клубам)
-    // ============================================
+    // Для координатора КЮДа — только участники его клуба
     if (role === 'club_coordinator') {
       const { data: coordinatorData } = await supabase
         .from('club_coordinators')
@@ -161,6 +155,7 @@ export default function Participants() {
         userId = newProfile.id
       }
 
+      // Привязываем к клубу
       if (form.club_id && userId) {
         const { data: existingRelation } = await supabase
           .from('club_participants')
@@ -294,11 +289,11 @@ export default function Participants() {
   const role = profile?.role
   const canManage = role === 'admin' || 
                     role === 'movement_coordinator' || 
-                    role === 'club_coordinator'
+                    role === 'club_coordinator' ||
+                    role === 'tutor'
 
   const canDelete = role === 'admin' || role === 'movement_coordinator'
   
-  // Показываем фильтр по клубам для: admin, movement_coordinator, tutor
   const showClubFilter = role === 'admin' || 
                          role === 'movement_coordinator' || 
                          role === 'tutor'
@@ -310,7 +305,7 @@ export default function Participants() {
         <div className="container" style={{ paddingTop: '50px', textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>⛔</div>
           <h1 style={{ color: '#0B1F3A' }}>Доступ запрещён</h1>
-          <p style={{ color: '#667085' }}>Только координаторы и администраторы</p>
+          <p style={{ color: '#667085' }}>Только координаторы, тьюторы и администраторы</p>
           <button
             className="btn btn-primary"
             onClick={() => navigate('/dashboard')}
@@ -370,25 +365,27 @@ export default function Participants() {
                 {viewMode === 'table' ? '📇 Карточки' : '📋 Таблица'}
               </button>
             )}
-            <button 
-              className="btn btn-primary" 
-              onClick={() => setShowForm(!showForm)}
-              style={{
-                padding: '8px 20px',
-                background: '#0B1F3A',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '600',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => e.target.style.background = '#174A7E'}
-              onMouseLeave={(e) => e.target.style.background = '#0B1F3A'}
-            >
-              {showForm ? '✖ Закрыть' : '➕ Добавить'}
-            </button>
+            {(role === 'admin' || role === 'movement_coordinator' || role === 'club_coordinator') && (
+              <button 
+                className="btn btn-primary" 
+                onClick={() => setShowForm(!showForm)}
+                style={{
+                  padding: '8px 20px',
+                  background: '#0B1F3A',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#174A7E'}
+                onMouseLeave={(e) => e.target.style.background = '#0B1F3A'}
+              >
+                {showForm ? '✖ Закрыть' : '➕ Добавить'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -619,9 +616,7 @@ export default function Participants() {
           </div>
         )}
 
-        {/* ============================================================
-            ФИЛЬТРЫ И ПОИСК
-            ============================================================ */}
+        {/* Фильтры и поиск */}
         <div style={{
           display: 'flex',
           gap: '16px',
@@ -648,9 +643,6 @@ export default function Participants() {
             />
           </div>
 
-          {/* ============================================================
-              ФИЛЬТР ПО КЛУБАМ (для админа, координатора движения, тьютора)
-              ============================================================ */}
           {showClubFilter && (
             <div style={{ minWidth: '200px' }}>
               <select
@@ -676,9 +668,6 @@ export default function Participants() {
             </div>
           )}
 
-          {/* ============================================================
-              ДЛЯ КООРДИНАТОРА КЮДА - показываем название его клуба
-              ============================================================ */}
           {role === 'club_coordinator' && clubs.length > 0 && (
             <div style={{ 
               padding: '8px 16px',
@@ -705,9 +694,7 @@ export default function Participants() {
           </div>
         </div>
 
-        {/* ============================================================
-            ТАБЛИЧНЫЙ ВИД
-            ============================================================ */}
+        {/* Табличный вид */}
         {viewMode === 'table' && (
           <div style={{
             background: 'white',
@@ -849,9 +836,7 @@ export default function Participants() {
           </div>
         )}
 
-        {/* ============================================================
-            КАРТОЧНЫЙ ВИД (только для admin, movement_coordinator, tutor)
-            ============================================================ */}
+        {/* Карточный вид */}
         {viewMode === 'cards' && showClubFilter && (
           <div>
             {Object.keys(grouped).length === 0 ? (

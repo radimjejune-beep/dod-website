@@ -12,10 +12,12 @@ export default function Register() {
   const [phone, setPhone] = useState('')
   const [school, setSchool] = useState('')
   const [classname, setClassname] = useState('')
+  const [selectedClubId, setSelectedClubId] = useState('')
+  const [clubs, setClubs] = useState([])
+  const [loadingClubs, setLoadingClubs] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [consentErrors, setConsentErrors] = useState(false)
   const [isMinor, setIsMinor] = useState(false)
   const [parentFullName, setParentFullName] = useState('')
   const [parentPhone, setParentPhone] = useState('')
@@ -36,6 +38,30 @@ export default function Register() {
   const [searchQuery, setSearchQuery] = useState('')
   
   const navigate = useNavigate()
+
+  // ============================================================
+  // ЗАГРУЗКА КЛУБОВ
+  // ============================================================
+  useEffect(() => {
+    loadClubs()
+  }, [])
+
+  const loadClubs = async () => {
+    setLoadingClubs(true)
+    try {
+      const { data, error } = await supabase
+        .from('clubs')
+        .select('*')
+        .order('name')
+      
+      if (!error) {
+        setClubs(data || [])
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки клубов:', err)
+    }
+    setLoadingClubs(false)
+  }
 
   useEffect(() => {
     if (birthDate) {
@@ -68,8 +94,9 @@ export default function Register() {
     if (searchQuery.length < 3) return
     
     const { data, error } = await supabase
-      .from('participants')
+      .from('profiles')
       .select('*')
+      .eq('role', 'participant')
       .ilike('full_name', `%${searchQuery}%`)
       .limit(5)
 
@@ -89,22 +116,22 @@ export default function Register() {
     setShowSearchResults(false)
   }
 
+  // ============================================================
+  // РЕГИСТРАЦИЯ
+  // ============================================================
   const handleRegister = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
     setSuccess(false)
-    setConsentErrors(false)
 
     if (!agreeToTerms || !agreePersonalData) {
-      setConsentErrors(true)
       setError('Для регистрации необходимо ознакомиться с Политикой и дать согласие на обработку персональных данных')
       setLoading(false)
       return
     }
 
     if (isMinor && !agreeMinorData) {
-      setConsentErrors(true)
       setError('Для регистрации несовершеннолетнего необходимо согласие законного представителя')
       setLoading(false)
       return
@@ -136,6 +163,9 @@ export default function Register() {
       if (authError) throw authError
 
       if (authData.user) {
+        // ============================================================
+        // СОЗДАНИЕ ПРОФИЛЯ
+        // ============================================================
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
@@ -154,62 +184,47 @@ export default function Register() {
 
         if (profileError) throw profileError
 
-        // ===== АВТОМАТИЧЕСКАЯ ПРИВЯЗКА КООРДИНАТОРА =====
-        if (role === 'club_coordinator') {
-          // Находим первый доступный клуб
-          const { data: firstClub, error: clubError } = await supabase
-            .from('clubs')
-            .select('id')
-            .limit(1)
-            .maybeSingle()
+        // ============================================================
+        // ПРИВЯЗКА К КЛУБУ (если участник выбрал клуб)
+        // ============================================================
+        if (role === 'participant' && selectedClubId) {
+          const { error: clubError } = await supabase
+            .from('club_participants')
+            .insert([
+              {
+                profile_id: authData.user.id,
+                club_id: selectedClubId,
+                status: 'active'
+              }
+            ])
 
           if (clubError) {
-            console.error('Ошибка поиска клуба:', clubError)
-          } else if (firstClub) {
-            const { error: coordError } = await supabase
-              .from('club_coordinators')
-              .insert([{
-                profile_id: authData.user.id,
-                club_id: firstClub.id
-              }])
-
-            if (coordError) {
-              console.error('Ошибка привязки координатора:', coordError)
-            } else {
-              console.log('✅ Координатор автоматически привязан к клубу')
-            }
+            console.error('Ошибка привязки к клубу:', clubError)
           } else {
-            console.log('⚠️ Клубов нет, координатор не привязан')
+            console.log('✅ Участник привязан к клубу')
           }
         }
 
-        // Если родитель — привязываем ребёнка
+        // ============================================================
+        // ПРИВЯЗКА К РОДИТЕЛЮ (если родитель)
+        // ============================================================
         if (role === 'parent' && selectedChild) {
-          const { data: parentData, error: parentError } = await supabase
-            .from('parents')
+          const { error: relationError } = await supabase
+            .from('parent_child_relations')
             .insert([
               {
-                profile_id: authData.user.id
-              }
-            ])
-            .select()
-            .single()
-
-          if (parentError) throw parentError
-
-          const { error: childError } = await supabase
-            .from('parent_children')
-            .insert([
-              {
-                parent_id: parentData.id,
-                participant_id: selectedChild.id
+                parent_id: authData.user.id,
+                child_id: selectedChild.id,
+                status: 'active'
               }
             ])
 
-          if (childError) throw childError
+          if (relationError) throw relationError
         }
 
-        // Сохранение согласий
+        // ============================================================
+        // СОХРАНЕНИЕ СОГЛАСИЙ
+        // ============================================================
         const consents = [
           {
             user_id: authData.user.id,
@@ -277,6 +292,7 @@ export default function Register() {
               consents_given: consents.map(c => c.consent_type),
               is_minor: isMinor,
               role: role,
+              club_id: selectedClubId || null,
               has_parent: role === 'parent' && !!selectedChild
             }
           }
@@ -296,10 +312,6 @@ export default function Register() {
   const availableRoles = [
     { value: 'participant', label: '👤 Участник' },
     { value: 'parent', label: '👨‍👩‍👦 Родитель' },
-    { value: 'club_coordinator', label: '🏫 Координатор КЮДа' },
-    { value: 'tutor', label: '📚 Тьютор' },
-    { value: 'movement_coordinator', label: '⭐ Координатор движения' },
-    { value: 'admin', label: '🔧 Администратор' },
   ]
 
   return (
@@ -408,10 +420,6 @@ export default function Register() {
               }}>
                 {role === 'participant' && '👤 Участник: запись на мероприятия, просмотр профиля, достижения'}
                 {role === 'parent' && '👨‍👩‍👦 Родитель: управление профилем ребёнка, запись на мероприятия'}
-                {role === 'club_coordinator' && '🏫 Координатор КЮДа: управление клубом, отчёты, участники'}
-                {role === 'tutor' && '📚 Тьютор: рекомендации, достижения, просмотр участников'}
-                {role === 'movement_coordinator' && '⭐ Координатор движения: управление всей системой'}
-                {role === 'admin' && '🔧 Администратор: полный доступ ко всему'}
               </div>
             </div>
           </div>
@@ -518,6 +526,54 @@ export default function Register() {
                   onChange={(e) => setClassname(e.target.value)}
                   placeholder="8А"
                 />
+              </div>
+
+              {/* ============================================================
+                  ВЫБОР КЛУБА ДЛЯ УЧАСТНИКА
+                  ============================================================ */}
+              <div className="form-group">
+                <label className="form-label">
+                  🏫 Клуб юных дипломатов
+                  <span style={{ fontSize: '12px', color: '#98A2B3', fontWeight: '400', marginLeft: '8px' }}>
+                    (необязательно)
+                  </span>
+                </label>
+                <select
+                  className="form-select"
+                  value={selectedClubId}
+                  onChange={(e) => setSelectedClubId(e.target.value)}
+                  disabled={loadingClubs}
+                >
+                  <option value="">— Выберите клуб —</option>
+                  {clubs.map((club) => (
+                    <option key={club.id} value={club.id}>
+                      {club.name}
+                    </option>
+                  ))}
+                </select>
+                {loadingClubs && (
+                  <div style={{ fontSize: '12px', color: '#98A2B3', marginTop: '4px' }}>
+                    ⏳ Загрузка клубов...
+                  </div>
+                )}
+                {!loadingClubs && clubs.length === 0 && (
+                  <div style={{ fontSize: '12px', color: '#C9A227', marginTop: '4px' }}>
+                    ⚠️ Клубы ещё не созданы. Вы сможете привязаться позже.
+                  </div>
+                )}
+                {selectedClubId && (
+                  <div style={{
+                    fontSize: '12px',
+                    color: '#16845B',
+                    marginTop: '4px',
+                    padding: '4px 8px',
+                    background: '#E8F5EF',
+                    borderRadius: '4px',
+                    display: 'inline-block'
+                  }}>
+                    ✅ Выбран клуб: {clubs.find(c => c.id === selectedClubId)?.name}
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -56,20 +56,22 @@ export default function TutorJournal() {
 
       // Загружаем участников мероприятия
       const { data: participantsData } = await supabase
-        .from('registrations')
+        .from('event_participants')
         .select(`
-          participant_id,
+          user_id,
           status,
-          participants:participant_id (
+          profiles:user_id (
             id,
             full_name,
             school,
             class_name,
-            clubs:club_id (name)
+            club_participants (
+              clubs:club_id (name)
+            )
           )
         `)
         .eq('event_id', eventId)
-        .eq('status', 'attended')
+        .eq('status', 'confirmed')
 
       setParticipants(participantsData || [])
 
@@ -117,7 +119,6 @@ export default function TutorJournal() {
 
       let result
       if (existingReview) {
-        // Сохраняем старую версию в историю
         await supabase
           .from('review_history')
           .insert([{
@@ -319,8 +320,8 @@ export default function TutorJournal() {
                 </tr>
               ) : (
                 participants.map((reg, index) => {
-                  const review = getReviewForParticipant(reg.participant_id)
-                  const participant = reg.participants
+                  const review = getReviewForParticipant(reg.user_id)
+                  const participant = reg.profiles
                   const status = review?.status || 'draft'
                   const statusBadge = {
                     'draft': { color: '#8A9AAA', bg: '#F4F6F9', label: 'Черновик' },
@@ -331,12 +332,12 @@ export default function TutorJournal() {
                   const canEditThis = canEdit || (isTutor && isLeadTutor)
 
                   return (
-                    <tr key={reg.participant_id}>
+                    <tr key={reg.user_id}>
                       <td>{index + 1}</td>
                       <td style={{ fontWeight: '500' }}>
                         {participant?.full_name || 'Неизвестно'}
                       </td>
-                      <td>{participant?.clubs?.name || '—'}</td>
+                      <td>{participant?.club_participants?.[0]?.clubs?.name || '—'}</td>
                       <td>
                         {review?.engagement ? (
                           <span style={{
@@ -399,6 +400,7 @@ export default function TutorJournal() {
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                          {/* ИСТОРИЯ */}
                           {(canEditThis || canApprove) && review && (
                             <button
                               className="btn btn-secondary"
@@ -409,6 +411,7 @@ export default function TutorJournal() {
                               📜
                             </button>
                           )}
+                          {/* РЕДАКТИРОВАТЬ */}
                           {(canEditThis || canApprove) && (
                             <button
                               className="btn btn-secondary"
@@ -437,6 +440,7 @@ export default function TutorJournal() {
                               {review ? '✏️' : '➕'}
                             </button>
                           )}
+                          {/* УТВЕРДИТЬ */}
                           {canApprove && review && review.status === 'submitted' && (
                             <button
                               className="btn btn-success"

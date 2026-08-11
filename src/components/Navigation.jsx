@@ -2,9 +2,15 @@
 import { Link, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import logo from '../assets/Image.png'
+import logoArd from '../assets/АРДЛОГО.png'
+import { useState } from 'react'
 
 export default function Navigation({ profile }) {
   const location = useLocation()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isEventsOpen, setIsEventsOpen] = useState(false)
+  const [isClubsOpen, setIsClubsOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   
   const isActive = (path) => {
     return location.pathname === path
@@ -19,80 +25,69 @@ export default function Navigation({ profile }) {
     ]
 
     const roleItems = {
-      // ============================================
-      // УЧАСТНИК (ребенок) - НЕТ КЮДов в меню
-      // ============================================
       'participant': [
         { path: '/events', label: 'Мероприятия', roles: ['participant'] },
         { path: '/my-achievements', label: 'Мои достижения', roles: ['participant'] },
+        { path: '/my-reviews', label: '📊 Мои оценки', roles: ['participant'] },
+        { path: '/president-tasks', label: '👑 Задания президента', roles: ['participant'] },
       ],
-
-      // ============================================
-      // РОДИТЕЛЬ - НЕТ КЮДов в меню
-      // ============================================
       'parent': [
         { path: '/events', label: 'Мероприятия', roles: ['parent'] },
         { path: '/my-achievements', label: 'Достижения ребенка', roles: ['parent'] },
+        { path: '/my-reviews', label: '📊 Оценки ребенка', roles: ['parent'] },
       ],
-
-      // ============================================
-      // КООРДИНАТОР КЮДА - только свой клуб
-      // ============================================
       'club_coordinator': [
         { path: '/clubs', label: 'Мой КЮД', roles: ['club_coordinator'] },
+        { path: '/president-tasks', label: '👑 Задания президента', roles: ['club_coordinator'] },
         { path: '/events', label: 'Мероприятия', roles: ['club_coordinator'] },
         { path: '/participants', label: 'Участники', roles: ['club_coordinator'] },
         { path: '/achievements', label: 'Достижения клуба', roles: ['club_coordinator'] },
+        { path: '/my-reviews', label: '📊 Оценки клуба', roles: ['club_coordinator'] },
         { path: '/reports', label: 'Отчёты', roles: ['club_coordinator'] },
         { path: '/club-analytics', label: 'Аналитика клуба', roles: ['club_coordinator'] },
         { path: '/staff', label: 'Сотрудники', roles: ['club_coordinator'] },
         { path: '/staff-calendar', label: 'Календарь', roles: ['club_coordinator'] },
       ],
-
-      // ============================================
-      // ТЬЮТОР - видит всё
-      // ============================================
       'tutor': [
         { path: '/clubs', label: 'КЮДы', roles: ['tutor'] },
         { path: '/events', label: 'Мероприятия', roles: ['tutor'] },
         { path: '/participants', label: 'Участники', roles: ['tutor'] },
         { path: '/achievements', label: 'Достижения', roles: ['tutor'] },
+        { path: '/my-reviews', label: '📊 Оценки', roles: ['tutor'] },
         { path: '/staff-calendar', label: 'Мой календарь', roles: ['tutor'] },
         { path: '/staff', label: 'Приглашения', roles: ['tutor'] },
         { path: '/my-journal', label: 'Мой журнал', roles: ['tutor'] },
       ],
-
-      // ============================================
-      // КООРДИНАТОР ДВИЖЕНИЯ - видит всё
-      // ============================================
       'movement_coordinator': [
         { path: '/dashboard', label: 'Дашборд', roles: ['movement_coordinator'] },
+        { path: '/president-tasks', label: '👑 Задания президента', roles: ['movement_coordinator'] },
         { path: '/clubs', label: 'КЮДы', roles: ['movement_coordinator'] },
         { path: '/events', label: 'Мероприятия', roles: ['movement_coordinator'] },
         { path: '/participants', label: 'Участники', roles: ['movement_coordinator'] },
         { path: '/achievements', label: 'Достижения', roles: ['movement_coordinator'] },
+        { path: '/my-reviews', label: '📊 Оценки', roles: ['movement_coordinator'] },
         { path: '/reports', label: 'Отчёты', roles: ['movement_coordinator'] },
         { path: '/analytics', label: 'Аналитика', roles: ['movement_coordinator'] },
         { path: '/settings', label: 'Настройки', roles: ['movement_coordinator'] },
         { path: '/admin/invite', label: 'Пригласить', roles: ['movement_coordinator'] },
+        { path: '/admin/users', label: '👥 Управление пользователями', roles: ['movement_coordinator'] },
         { path: '/staff', label: 'Сотрудники', roles: ['movement_coordinator'] },
         { path: '/staff-calendar', label: 'Календарь', roles: ['movement_coordinator'] },
         { path: '/club-analytics', label: 'Аналитика клубов', roles: ['movement_coordinator'] },
       ],
-
-      // ============================================
-      // АДМИН - видит всё
-      // ============================================
       'admin': [
         { path: '/dashboard', label: 'Дашборд', roles: ['admin'] },
+        { path: '/president-tasks', label: '👑 Задания президента', roles: ['admin'] },
         { path: '/clubs', label: 'КЮДы', roles: ['admin'] },
         { path: '/events', label: 'Мероприятия', roles: ['admin'] },
         { path: '/participants', label: 'Участники', roles: ['admin'] },
         { path: '/achievements', label: 'Достижения', roles: ['admin'] },
+        { path: '/my-reviews', label: '📊 Оценки', roles: ['admin'] },
         { path: '/reports', label: 'Отчёты', roles: ['admin'] },
         { path: '/analytics', label: 'Аналитика', roles: ['admin'] },
         { path: '/settings', label: 'Настройки', roles: ['admin'] },
         { path: '/admin/invite', label: 'Пригласить', roles: ['admin'] },
+        { path: '/admin/users', label: '👥 Управление пользователями', roles: ['admin'] },
         { path: '/staff', label: 'Сотрудники', roles: ['admin'] },
         { path: '/staff-calendar', label: 'Календарь', roles: ['admin'] },
         { path: '/club-analytics', label: 'Аналитика клубов', roles: ['admin'] },
@@ -116,6 +111,39 @@ export default function Navigation({ profile }) {
     window.location.href = '/'
   }
 
+  // Группировка для выпадающих меню
+  const groupedItems = {
+    main: menuItems.filter(item => 
+      ['/', '/profile', '/dashboard'].includes(item.path)
+    ),
+    events: menuItems.filter(item => 
+      ['/events', '/calendar', '/participants'].includes(item.path)
+    ),
+    clubs: menuItems.filter(item => 
+      ['/clubs', '/club-analytics', '/my-reviews', '/achievements'].includes(item.path)
+    ),
+    settings: menuItems.filter(item => 
+      ['/settings', '/admin/invite', '/admin/users', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
+    ),
+    other: menuItems.filter(item => 
+      !['/', '/profile', '/dashboard', '/events', '/calendar', '/participants', '/clubs', '/club-analytics', '/my-reviews', '/achievements', '/settings', '/admin/invite', '/admin/users', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
+    )
+  }
+
+  const categories = []
+  if (groupedItems.events.length > 0) {
+    categories.push({ title: '📅 Мероприятия', items: groupedItems.events, key: 'events' })
+  }
+  if (groupedItems.clubs.length > 0) {
+    categories.push({ title: '🏫 Клубы', items: groupedItems.clubs, key: 'clubs' })
+  }
+  if (groupedItems.settings.length > 0) {
+    categories.push({ title: '⚙️ Настройки', items: groupedItems.settings, key: 'settings' })
+  }
+  if (groupedItems.other.length > 0) {
+    categories.push({ title: '📌 Другое', items: groupedItems.other, key: 'other' })
+  }
+
   return (
     <nav style={{
       background: '#FFFFFF',
@@ -136,11 +164,11 @@ export default function Navigation({ profile }) {
         gap: '4px',
         minHeight: '48px'
       }}>
-        {/* ЛОГОТИП - ведет на главную */}
+        {/* ===== ЛОГОТИПЫ ===== */}
         <Link to="/" style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
+          gap: '12px',
           textDecoration: 'none',
           padding: '4px 8px',
           borderRadius: '6px',
@@ -149,39 +177,84 @@ export default function Navigation({ profile }) {
         onMouseEnter={(e) => e.currentTarget.style.background = '#F4F6F9'}
         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
         >
-          <img 
-            src={logo} 
-            alt="Логотип ДОД Дипломаты будущего"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              objectFit: 'cover',
-              border: '2px solid #C9A227'
-            }}
-          />
-          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-            <span style={{
-              fontSize: '14px',
-              fontWeight: '700',
-              color: '#0B1F3A',
-              letterSpacing: '0.3px'
-            }}>
-              Дипломаты будущего
-            </span>
-            <span style={{
-              fontSize: '8px',
-              fontWeight: '500',
-              color: '#C9A227',
-              letterSpacing: '0.5px',
-              textTransform: 'uppercase'
-            }}>
-              Ассоциация российских дипломатов
-            </span>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <img 
+              src={logo} 
+              alt="Логотип ДОД Дипломаты будущего"
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '2px solid #C9A227'
+              }}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+              <span style={{
+                fontSize: '14px',
+                fontWeight: '700',
+                color: '#0B1F3A',
+                letterSpacing: '0.3px'
+              }}>
+                Дипломаты будущего
+              </span>
+              <span style={{
+                fontSize: '8px',
+                fontWeight: '500',
+                color: '#C9A227',
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase'
+              }}>
+                Ассоциация российских дипломатов
+              </span>
+            </div>
+          </div>
+
+          <span style={{
+            width: '1px',
+            height: '30px',
+            background: '#E2E7EF',
+            margin: '0 4px'
+          }} />
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            <img 
+              src={logoArd} 
+              alt="Ассоциация российских дипломатов"
+              style={{
+                height: '28px',
+                objectFit: 'contain'
+              }}
+            />
           </div>
         </Link>
 
-        {/* ПУНКТЫ МЕНЮ */}
+        {/* БУРГЕР-МЕНЮ */}
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          style={{
+            display: 'none',
+            background: 'none',
+            border: 'none',
+            fontSize: '24px',
+            cursor: 'pointer',
+            padding: '4px 8px',
+            color: '#0B1F3A'
+          }}
+          className="burger-button"
+        >
+          ☰
+        </button>
+
+        {/* ДЕСКТОПНОЕ МЕНЮ */}
         <div style={{
           display: 'flex',
           gap: '2px',
@@ -189,8 +262,10 @@ export default function Navigation({ profile }) {
           flexWrap: 'wrap',
           flex: 1,
           justifyContent: 'center'
-        }}>
-          {menuItems.map((item) => (
+        }}
+        className="desktop-menu"
+        >
+          {groupedItems.main.map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -234,6 +309,96 @@ export default function Navigation({ profile }) {
               )}
             </Link>
           ))}
+
+          {categories.map((category) => (
+            <div
+              key={category.key}
+              style={{ position: 'relative' }}
+              onMouseEnter={() => {
+                if (category.key === 'events') setIsEventsOpen(true)
+                if (category.key === 'clubs') setIsClubsOpen(true)
+                if (category.key === 'settings') setIsSettingsOpen(true)
+              }}
+              onMouseLeave={() => {
+                if (category.key === 'events') setIsEventsOpen(false)
+                if (category.key === 'clubs') setIsClubsOpen(false)
+                if (category.key === 'settings') setIsSettingsOpen(false)
+              }}
+            >
+              <button
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'transparent',
+                  fontSize: '13px',
+                  fontWeight: category.items.some(item => isActive(item.path)) ? '600' : '400',
+                  color: category.items.some(item => isActive(item.path)) ? '#0B1F3A' : '#667085',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                  letterSpacing: '0.2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#F4F6F9'
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'transparent'
+                }}
+              >
+                {category.title} ▼
+              </button>
+              
+              {(category.key === 'events' && isEventsOpen) ||
+               (category.key === 'clubs' && isClubsOpen) ||
+               (category.key === 'settings' && isSettingsOpen) ? (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  background: 'white',
+                  borderRadius: '12px',
+                  boxShadow: '0 12px 35px rgba(11, 31, 58, 0.12)',
+                  border: '1px solid #E2E7EF',
+                  minWidth: '200px',
+                  padding: '8px',
+                  zIndex: 100,
+                  animation: 'fadeIn 0.2s ease'
+                }}>
+                  {category.items.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      style={{
+                        display: 'block',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        textDecoration: 'none',
+                        fontSize: '13px',
+                        fontWeight: isActive(item.path) ? '600' : '400',
+                        color: isActive(item.path) ? '#0B1F3A' : '#667085',
+                        background: isActive(item.path) ? '#F4F6F9' : 'transparent',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.background = '#F4F6F9'
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive(item.path)) {
+                          e.target.style.background = 'transparent'
+                        }
+                      }}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ))}
         </div>
 
         {/* ВЫХОД */}
@@ -264,6 +429,66 @@ export default function Navigation({ profile }) {
           Выйти
         </button>
       </div>
+
+      {/* МОБИЛЬНОЕ МЕНЮ */}
+      {isMobileMenuOpen && (
+        <div style={{
+          display: 'none',
+          flexDirection: 'column',
+          gap: '4px',
+          padding: '12px 0',
+          borderTop: '1px solid #E2E7EF',
+          marginTop: '8px'
+        }}
+        className="mobile-menu"
+        >
+          {menuItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontSize: '14px',
+                fontWeight: isActive(item.path) ? '600' : '400',
+                color: isActive(item.path) ? '#0B1F3A' : '#667085',
+                background: isActive(item.path) ? '#F4F6F9' : 'transparent',
+                transition: 'all 0.2s ease'
+              }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-menu {
+            display: none !important;
+          }
+          .burger-button {
+            display: block !important;
+          }
+          .mobile-menu {
+            display: flex !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .burger-button {
+            display: none !important;
+          }
+          .mobile-menu {
+            display: none !important;
+          }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </nav>
   )
 }

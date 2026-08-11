@@ -33,13 +33,6 @@ export default function Clubs() {
 
       let clubsData = []
 
-      // ============================================
-      // ПРАВИЛА ДОСТУПА:
-      // - club_coordinator → только свой клуб
-      // - movement_coordinator → все клубы
-      // - admin → все клубы
-      // - tutor → все клубы
-      // ============================================
       if (profileData.role === 'club_coordinator') {
         // Координатор КЮДа - только свой клуб
         const { data: coordData } = await supabase
@@ -57,7 +50,7 @@ export default function Clubs() {
           clubsData = clubsResult || []
         }
       } else {
-        // Все остальные роли (admin, movement_coordinator, tutor) - видят все клубы
+        // Все остальные роли - видят все клубы
         const { data: allClubs } = await supabase
           .from('clubs')
           .select('*')
@@ -67,7 +60,7 @@ export default function Clubs() {
 
       setClubs(clubsData)
 
-      // Считаем количество участников для каждого клуба
+      // Считаем количество участников
       const counts = {}
       for (const club of clubsData) {
         const { count } = await supabase
@@ -98,7 +91,6 @@ export default function Clubs() {
   }
 
   const isCoordinator = profile?.role === 'club_coordinator'
-  const isAdminOrMovementCoordinator = profile?.role === 'admin' || profile?.role === 'movement_coordinator'
 
   return (
     <div className="fade-in" style={{ background: '#F4F6F9', minHeight: '100vh' }}>
@@ -111,9 +103,7 @@ export default function Clubs() {
         <p style={{ color: '#667085', marginBottom: '24px', fontSize: '16px' }}>
           {isCoordinator 
             ? 'Клуб, в котором вы являетесь координатором' 
-            : isAdminOrMovementCoordinator
-              ? 'Управление всеми клубами движения'
-              : 'Все клубы юных дипломатов движения'}
+            : 'Все клубы юных дипломатов движения'}
         </p>
 
         {clubs.length === 0 ? (

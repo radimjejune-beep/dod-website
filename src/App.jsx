@@ -17,6 +17,7 @@ import DashboardAnalytics from './pages/DashboardAnalytics'
 import Reports from './pages/Reports'
 import Legal from './pages/Legal'
 import AdminInvite from './pages/AdminInvite'
+import AdminUsers from './pages/AdminUsers'
 import EventParticipants from './pages/EventParticipants'
 import StaffManagement from './pages/StaffManagement'
 import StaffCalendar from './pages/StaffCalendar'
@@ -24,7 +25,9 @@ import TutorJournal from './pages/TutorJournal'
 import MyJournal from './pages/MyJournal'
 import ClubAnalytics from './pages/ClubAnalytics'
 import MyAchievements from './pages/MyAchievements'
+import MyReviews from './pages/MyReviews'
 import NewsDetail from './pages/NewsDetail'
+import PresidentTasks from './pages/PresidentTasks'
 import ProtectedRoute from './components/ProtectedRoute'
 import Footer from './components/Footer'
 
@@ -34,18 +37,18 @@ function App() {
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <div style={{ flex: 1 }}>
           <Routes>
-            {/* Публичные страницы */}
+            {/* ============================================================
+                ПУБЛИЧНЫЕ СТРАНИЦЫ
+                ============================================================ */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            
-            {/* Публичная страница новости */}
             <Route path="/news/:id" element={<NewsDetail />} />
-            
-            {/* Юридические страницы (доступны всем) */}
             <Route path="/legal/:document" element={<Legal />} />
             
-            {/* Защищённые страницы */}
+            {/* ============================================================
+                ЗАЩИЩЁННЫЕ СТРАНИЦЫ
+                ============================================================ */}
             <Route path="/dashboard" element={
               <ProtectedRoute><Dashboard /></ProtectedRoute>
             } />
@@ -79,14 +82,26 @@ function App() {
             <Route path="/my-achievements" element={
               <ProtectedRoute><MyAchievements /></ProtectedRoute>
             } />
+            <Route path="/my-reviews" element={
+              <ProtectedRoute><MyReviews /></ProtectedRoute>
+            } />
+            <Route path="/president-tasks" element={
+              <ProtectedRoute><PresidentTasks /></ProtectedRoute>
+            } />
             <Route path="/analytics" element={
               <ProtectedRoute><DashboardAnalytics /></ProtectedRoute>
+            } />
+            <Route path="/club-analytics" element={
+              <ProtectedRoute><ClubAnalytics /></ProtectedRoute>
             } />
             <Route path="/reports" element={
               <ProtectedRoute><Reports /></ProtectedRoute>
             } />
             <Route path="/admin/invite" element={
               <ProtectedRoute><AdminInvite /></ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute><AdminUsers /></ProtectedRoute>
             } />
             <Route path="/event/:eventId/participants" element={
               <ProtectedRoute><EventParticipants /></ProtectedRoute>
@@ -102,9 +117,6 @@ function App() {
             } />
             <Route path="/my-journal" element={
               <ProtectedRoute><MyJournal /></ProtectedRoute>
-            } />
-            <Route path="/club-analytics" element={
-              <ProtectedRoute><ClubAnalytics /></ProtectedRoute>
             } />
           </Routes>
         </div>
