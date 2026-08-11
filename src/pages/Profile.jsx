@@ -13,31 +13,15 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState('profile')
   const [consents, setConsents] = useState([])
   const [consentsLoading, setConsentsLoading] = useState(false)
-
-  // ===== ДОПОЛНИТЕЛЬНЫЕ КРУЖКИ =====
-  const [extraActivities, setExtraActivities] = useState([])
-  const [extraLoading, setExtraLoading] = useState(false)
-  const [showExtraActivityForm, setShowExtraActivityForm] = useState(false)
-  const [editingExtraId, setEditingExtraId] = useState(null)
-  const [extraActivityForm, setExtraActivityForm] = useState({
-    name: '',
-    organization: '',
-    type: 'club',
-    schedule: '',
-    teacher: '',
-    achievements: '',
-    start_date: '',
-    end_date: '',
-    is_active: true,
-    comment: ''
-  })
+  const [achievements, setAchievements] = useState([])
+  const [achievementsLoading, setAchievementsLoading] = useState(false)
 
   const navigate = useNavigate()
 
   useEffect(() => {
     loadProfile()
     loadConsents()
-    loadExtraActivities()
+    loadAchievements()
   }, [])
 
   const loadProfile = async () => {
@@ -78,131 +62,24 @@ export default function Profile() {
     setConsentsLoading(false)
   }
 
-  // ============================================================
-  // ЗАГРУЗКА ДОПОЛНИТЕЛЬНЫХ КРУЖКОВ
-  // ============================================================
-  const loadExtraActivities = async () => {
+  const loadAchievements = async () => {
+    setAchievementsLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) {
+      setAchievementsLoading(false)
+      return
+    }
 
-    setExtraLoading(true)
     const { data, error } = await supabase
-      .from('extra_activities')
+      .from('achievements')
       .select('*')
       .eq('participant_id', user.id)
-      .order('start_date', { ascending: false })
+      .order('achievement_date', { ascending: false })
 
     if (!error) {
-      setExtraActivities(data || [])
+      setAchievements(data || [])
     }
-    setExtraLoading(false)
-  }
-
-  // ============================================================
-  // ДОБАВЛЕНИЕ/ОБНОВЛЕНИЕ КРУЖКА
-  // ============================================================
-  const handleExtraActivitySubmit = async (e) => {
-    e.preventDefault()
-    setMessage('')
-    setSaving(true)
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Пользователь не найден')
-
-      const data = {
-        participant_id: user.id,
-        name: extraActivityForm.name,
-        organization: extraActivityForm.organization || '',
-        type: extraActivityForm.type || 'club',
-        schedule: extraActivityForm.schedule || '',
-        teacher: extraActivityForm.teacher || '',
-        achievements: extraActivityForm.achievements || '',
-        start_date: extraActivityForm.start_date || null,
-        end_date: extraActivityForm.end_date || null,
-        is_active: extraActivityForm.is_active,
-        comment: extraActivityForm.comment || ''
-      }
-
-      let error
-      if (editingExtraId) {
-        const { error: updateError } = await supabase
-          .from('extra_activities')
-          .update(data)
-          .eq('id', editingExtraId)
-        error = updateError
-      } else {
-        const { error: insertError } = await supabase
-          .from('extra_activities')
-          .insert([data])
-        error = insertError
-      }
-
-      if (error) throw error
-
-      showMessage(editingExtraId ? '✅ Кружок обновлён!' : '✅ Кружок добавлен!', 'success')
-      resetExtraActivityForm()
-      loadExtraActivities()
-    } catch (err) {
-      showMessage('❌ Ошибка: ' + err.message, 'error')
-    }
-    setSaving(false)
-  }
-
-  const resetExtraActivityForm = () => {
-    setExtraActivityForm({
-      name: '',
-      organization: '',
-      type: 'club',
-      schedule: '',
-      teacher: '',
-      achievements: '',
-      start_date: '',
-      end_date: '',
-      is_active: true,
-      comment: ''
-    })
-    setEditingExtraId(null)
-    setShowExtraActivityForm(false)
-  }
-
-  const handleEditExtraActivity = (item) => {
-    setExtraActivityForm({
-      name: item.name || '',
-      organization: item.organization || '',
-      type: item.type || 'club',
-      schedule: item.schedule || '',
-      teacher: item.teacher || '',
-      achievements: item.achievements || '',
-      start_date: item.start_date || '',
-      end_date: item.end_date || '',
-      is_active: item.is_active !== false,
-      comment: item.comment || ''
-    })
-    setEditingExtraId(item.id)
-    setShowExtraActivityForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const handleDeleteExtraActivity = async (extraId) => {
-    if (!confirm('Удалить запись о кружке?')) return
-
-    const { error } = await supabase
-      .from('extra_activities')
-      .delete()
-      .eq('id', extraId)
-
-    if (!error) {
-      setExtraActivities(extraActivities.filter(a => a.id !== extraId))
-      showMessage('✅ Кружок удалён', 'success')
-      setTimeout(() => setMessage(''), 3000)
-    }
-  }
-
-  const showMessage = (text, type = 'success') => {
-    setMessage(text)
-    setMessageType(type)
-    setTimeout(() => setMessage(''), 4000)
+    setAchievementsLoading(false)
   }
 
   const handleSave = async (e) => {
@@ -224,15 +101,18 @@ export default function Profile() {
       .eq('id', profile.id)
 
     if (error) {
-      showMessage('❌ Ошибка: ' + error.message, 'error')
+      setMessage('❌ Ошибка: ' + error.message)
+      setMessageType('error')
     } else {
-      showMessage('✅ Профиль успешно обновлён!', 'success')
+      setMessage('✅ Профиль успешно обновлён!')
+      setMessageType('success')
+      setTimeout(() => setMessage(''), 3000)
     }
     setSaving(false)
   }
 
   const handleRevokeAllConsents = async () => {
-    if (!confirm('Вы уверены, что хотите отозвать все согласия? Это может ограничить доступ к платформе.')) return
+    if (!confirm('Вы уверены, что хотите отозвать все согласия?')) return
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -248,7 +128,8 @@ export default function Profile() {
       .is('revoked_at', null)
 
     if (updateError) {
-      showMessage('❌ Ошибка при отзыве согласий: ' + updateError.message, 'error')
+      setMessage('❌ Ошибка при отзыве согласий: ' + updateError.message)
+      setMessageType('error')
       setConsentsLoading(false)
       return
     }
@@ -264,9 +145,11 @@ export default function Profile() {
       }
     ])
 
-    showMessage('✅ Все согласия отозваны', 'success')
+    setMessage('✅ Все согласия отозваны')
+    setMessageType('success')
     await loadConsents()
     setConsentsLoading(false)
+    setTimeout(() => setMessage(''), 3000)
   }
 
   const handleRevokeSingleConsent = async (consentId) => {
@@ -283,10 +166,13 @@ export default function Profile() {
       .eq('id', consentId)
 
     if (error) {
-      showMessage('❌ Ошибка: ' + error.message, 'error')
+      setMessage('❌ Ошибка: ' + error.message)
+      setMessageType('error')
     } else {
-      showMessage('✅ Согласие отозвано', 'success')
+      setMessage('✅ Согласие отозвано')
+      setMessageType('success')
       await loadConsents()
+      setTimeout(() => setMessage(''), 3000)
     }
   }
 
@@ -315,18 +201,6 @@ export default function Profile() {
     return roles[role] || role
   }
 
-  // Типы дополнительных занятий
-  const activityTypes = {
-    'club': '🏫 Кружок',
-    'sport': '⚽ Спорт',
-    'music': '🎵 Музыка',
-    'art': '🎨 Творчество',
-    'language': '🌍 Языки',
-    'science': '🔬 Наука',
-    'volunteer': '❤️ Волонтёрство',
-    'other': '📌 Другое'
-  }
-
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -340,7 +214,6 @@ export default function Profile() {
       <Navigation profile={profile} />
       
       <div className="container" style={{ paddingTop: '30px', maxWidth: '800px', margin: '0 auto', padding: '30px 24px 40px' }}>
-        {/* Заголовок */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#0B1F3A' }}>👤 Мой профиль</h1>
           <span style={{
@@ -382,6 +255,22 @@ export default function Profile() {
             }}
           >
             📋 Профиль
+          </button>
+          <button
+            onClick={() => setActiveTab('achievements')}
+            style={{
+              padding: '10px 24px',
+              border: 'none',
+              background: activeTab === 'achievements' ? '#0B1F3A' : 'transparent',
+              color: activeTab === 'achievements' ? 'white' : '#667085',
+              borderRadius: '8px 8px 0 0',
+              cursor: 'pointer',
+              fontWeight: activeTab === 'achievements' ? '600' : '500',
+              fontSize: '14px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            🏆 Достижения
           </button>
           {(profile?.role === 'participant' || profile?.role === 'parent') && (
             <button
@@ -434,9 +323,7 @@ export default function Profile() {
           </div>
         )}
 
-        {/* ============================================================
-            ВКЛАДКА: ПРОФИЛЬ
-            ============================================================ */}
+        {/* ===== ВКЛАДКА: ПРОФИЛЬ ===== */}
         {activeTab === 'profile' && (
           <form onSubmit={handleSave} className="card" style={{ padding: '32px', background: 'white', borderRadius: '16px', border: '1px solid #E2E7EF' }}>
             <div className="form-group">
@@ -565,312 +452,65 @@ export default function Profile() {
           </form>
         )}
 
-        {/* ============================================================
-            ВКЛАДКА: КРУЖКИ И УВЛЕЧЕНИЯ (для участников)
-            ============================================================ */}
-        {activeTab === 'activities' && (profile?.role === 'participant' || profile?.role === 'parent') && (
+        {/* ===== ВКЛАДКА: ДОСТИЖЕНИЯ ===== */}
+        {activeTab === 'achievements' && (
           <div className="card" style={{ padding: '24px', background: 'white', borderRadius: '16px', border: '1px solid #E2E7EF' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#0B1F3A' }}>
-                🎯 Мои кружки и увлечения
+                🏆 Мои достижения
               </h3>
-              <button
-                className="btn btn-primary"
-                style={{ 
-                  padding: '6px 16px', 
-                  fontSize: '13px',
-                  background: '#0B1F3A',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-                onClick={() => setShowExtraActivityForm(!showExtraActivityForm)}
-              >
-                {showExtraActivityForm ? '✖ Закрыть' : '➕ Добавить кружок'}
-              </button>
+              <span style={{ fontSize: '13px', color: '#667085' }}>
+                {achievements.length} достижений
+              </span>
             </div>
 
-            {/* ФОРМА ДОБАВЛЕНИЯ КРУЖКА */}
-            {showExtraActivityForm && (
-              <div style={{ padding: '20px', background: '#F4F6F9', borderRadius: '12px', marginBottom: '16px' }}>
-                <h4 style={{ fontSize: '15px', fontWeight: '600', color: '#0B1F3A', marginBottom: '12px' }}>
-                  {editingExtraId ? '✏️ Редактировать кружок' : '📝 Добавить кружок'}
-                </h4>
-                <form onSubmit={handleExtraActivitySubmit}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                    <div className="form-group">
-                      <label className="form-label">Название *</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={extraActivityForm.name}
-                        onChange={(e) => setExtraActivityForm({ ...extraActivityForm, name: e.target.value })}
-                        required
-                        placeholder="Английский клуб"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Тип</label>
-                      <select
-                        className="form-select"
-                        value={extraActivityForm.type}
-                        onChange={(e) => setExtraActivityForm({ ...extraActivityForm, type: e.target.value })}
-                      >
-                        {Object.entries(activityTypes).map(([key, label]) => (
-                          <option key={key} value={key}>{label}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Организация</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={extraActivityForm.organization}
-                        onChange={(e) => setExtraActivityForm({ ...extraActivityForm, organization: e.target.value })}
-                        placeholder="Дом детского творчества"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Преподаватель</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={extraActivityForm.teacher}
-                        onChange={(e) => setExtraActivityForm({ ...extraActivityForm, teacher: e.target.value })}
-                        placeholder="Иванова М.А."
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Расписание</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={extraActivityForm.schedule}
-                        onChange={(e) => setExtraActivityForm({ ...extraActivityForm, schedule: e.target.value })}
-                        placeholder="Вт/Чт 15:00-16:30"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Дата начала</label>
-                      <input
-                        type="date"
-                        className="form-input"
-                        value={extraActivityForm.start_date}
-                        onChange={(e) => setExtraActivityForm({ ...extraActivityForm, start_date: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Дата окончания</label>
-                      <input
-                        type="date"
-                        className="form-input"
-                        value={extraActivityForm.end_date}
-                        onChange={(e) => setExtraActivityForm({ ...extraActivityForm, end_date: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Активно</label>
-                      <select
-                        className="form-select"
-                        value={extraActivityForm.is_active ? 'true' : 'false'}
-                        onChange={(e) => setExtraActivityForm({ ...extraActivityForm, is_active: e.target.value === 'true' })}
-                      >
-                        <option value="true">🟢 Да</option>
-                        <option value="false">🔴 Нет</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Достижения в кружке</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={extraActivityForm.achievements}
-                      onChange={(e) => setExtraActivityForm({ ...extraActivityForm, achievements: e.target.value })}
-                      placeholder="Победитель городской олимпиады"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Комментарий</label>
-                    <textarea
-                      className="form-input"
-                      rows="2"
-                      value={extraActivityForm.comment}
-                      onChange={(e) => setExtraActivityForm({ ...extraActivityForm, comment: e.target.value })}
-                      placeholder="Дополнительная информация о кружке..."
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                    <button type="submit" className="btn btn-success" disabled={saving} style={{
-                      padding: '10px 24px',
-                      background: '#16845B',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: '600'
-                    }}>
-                      {saving ? '⏳ Сохранение...' : editingExtraId ? '💾 Обновить' : '✅ Добавить'}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={resetExtraActivityForm}
-                      style={{
-                        padding: '10px 24px',
-                        background: 'transparent',
-                        color: '#0B1F3A',
-                        border: '1.5px solid #D5DCE7',
-                        borderRadius: '10px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '500'
-                      }}
-                    >
-                      ❌ Отмена
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* СПИСОК КРУЖКОВ */}
-            {extraLoading ? (
+            {achievementsLoading ? (
               <div style={{ textAlign: 'center', padding: '20px' }}>
                 <div className="spinner" style={{ margin: '0 auto' }} />
               </div>
-            ) : extraActivities.length === 0 ? (
+            ) : achievements.length === 0 ? (
               <div style={{ padding: '30px', textAlign: 'center', background: '#F4F6F9', borderRadius: '10px' }}>
-                <p style={{ color: '#667085' }}>У вас пока нет дополнительных кружков</p>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏆</div>
+                <p style={{ color: '#667085', fontSize: '16px' }}>У вас пока нет достижений</p>
                 <p style={{ fontSize: '13px', color: '#98A2B3', marginTop: '4px' }}>
-                  Добавьте информацию о ваших внешкольных занятиях
+                  Участвуйте в мероприятиях и получайте награды!
                 </p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
-                {extraActivities.map((item) => (
-                  <div key={item.id} style={{
-                    padding: '16px',
-                    background: item.is_active !== false ? '#F8FAFC' : '#F4F6F9',
-                    borderRadius: '12px',
-                    border: `2px solid ${item.is_active !== false ? '#C9A227' : '#E2E7EF'}`,
-                    opacity: item.is_active !== false ? 1 : 0.7,
-                    transition: 'all 0.2s ease'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                      <div>
-                        <div style={{ fontSize: '20px' }}>
-                          {activityTypes[item.type]?.split(' ')[0] || '📌'}
-                        </div>
-                        <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#0B1F3A', margin: '4px 0' }}>
-                          {item.name}
-                        </h4>
-                        {item.organization && (
-                          <div style={{ fontSize: '13px', color: '#667085' }}>🏛️ {item.organization}</div>
-                        )}
-                        {item.teacher && (
-                          <div style={{ fontSize: '13px', color: '#667085' }}>👨‍🏫 {item.teacher}</div>
-                        )}
-                        {item.schedule && (
-                          <div style={{ fontSize: '13px', color: '#667085' }}>🕐 {item.schedule}</div>
-                        )}
-                        {(item.start_date || item.end_date) && (
-                          <div style={{ fontSize: '12px', color: '#98A2B3', marginTop: '4px' }}>
-                            {item.start_date && `С: ${new Date(item.start_date).toLocaleDateString('ru-RU')}`}
-                            {item.end_date && ` До: ${new Date(item.end_date).toLocaleDateString('ru-RU')}`}
-                          </div>
-                        )}
-                        {item.achievements && (
-                          <div style={{
-                            fontSize: '13px',
-                            color: '#C9A227',
-                            marginTop: '6px',
-                            padding: '4px 10px',
-                            background: '#FBF4DC',
-                            borderRadius: '6px',
-                            display: 'inline-block'
-                          }}>
-                            🏆 {item.achievements}
-                          </div>
-                        )}
-                        {item.comment && (
-                          <div style={{
-                            fontSize: '13px',
-                            color: '#174A7E',
-                            marginTop: '6px',
-                            padding: '4px 10px',
-                            background: '#EAF2FA',
-                            borderRadius: '6px'
-                          }}>
-                            💬 {item.comment}
-                          </div>
-                        )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {achievements.map((a) => (
+                  <div
+                    key={a.id}
+                    style={{
+                      padding: '14px 18px',
+                      background: '#F8FAFC',
+                      borderRadius: '10px',
+                      borderLeft: a.is_club_award ? '4px solid #C9A227' : 
+                                 a.is_tutor_award ? '4px solid #174A7E' : '4px solid #0B1F3A'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ fontSize: '28px' }}>
+                        {a.is_club_award ? '🏫' : 
+                         a.is_tutor_award ? '📚' : '🏅'}
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
-                        {item.is_active !== false ? (
-                          <span style={{
-                            fontSize: '10px',
-                            padding: '2px 10px',
-                            borderRadius: '12px',
-                            background: '#E8F5EF',
-                            color: '#16845B',
-                            fontWeight: '600'
-                          }}>
-                            Активно
-                          </span>
-                        ) : (
-                          <span style={{
-                            fontSize: '10px',
-                            padding: '2px 10px',
-                            borderRadius: '12px',
-                            background: '#FCEBEC',
-                            color: '#B3262E',
-                            fontWeight: '600'
-                          }}>
-                            Завершено
-                          </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', color: '#0B1F3A' }}>
+                          {a.title}
+                        </div>
+                        {a.description && (
+                          <div style={{ fontSize: '13px', color: '#667085' }}>
+                            {a.description}
+                          </div>
                         )}
-                        <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
-                          <button
-                            style={{
-                              padding: '2px 8px',
-                              background: '#F4F6F9',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px'
-                            }}
-                            onClick={() => handleEditExtraActivity(item)}
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            style={{
-                              padding: '2px 8px',
-                              background: '#FCEBEC',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              color: '#B3262E'
-                            }}
-                            onClick={() => handleDeleteExtraActivity(item.id)}
-                          >
-                            🗑️
-                          </button>
+                        <div style={{ fontSize: '12px', color: '#98A2B3', marginTop: '4px' }}>
+                          📅 {new Date(a.achievement_date || a.created_at).toLocaleDateString('ru-RU')}
+                          {a.is_club_award && (
+                            <span style={{ marginLeft: '8px', color: '#C9A227' }}>🏫 Клубная награда</span>
+                          )}
+                          {a.is_tutor_award && (
+                            <span style={{ marginLeft: '8px', color: '#174A7E' }}>📚 Награда тьютора</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -881,9 +521,22 @@ export default function Profile() {
           </div>
         )}
 
-        {/* ============================================================
-            ВКЛАДКА: СОГЛАСИЯ
-            ============================================================ */}
+        {/* ===== ВКЛАДКА: КРУЖКИ ===== */}
+        {activeTab === 'activities' && (profile?.role === 'participant' || profile?.role === 'parent') && (
+          <div className="card" style={{ padding: '24px', background: 'white', borderRadius: '16px', border: '1px solid #E2E7EF' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#0B1F3A', marginBottom: '16px' }}>
+              🎯 Мои кружки и увлечения
+            </h3>
+            <div style={{ padding: '20px', textAlign: 'center', background: '#F4F6F9', borderRadius: '10px' }}>
+              <p style={{ color: '#667085' }}>Раздел в разработке</p>
+              <p style={{ fontSize: '13px', color: '#98A2B3', marginTop: '4px' }}>
+                Скоро здесь появится возможность добавлять кружки
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ===== ВКЛАДКА: СОГЛАСИЯ ===== */}
         {activeTab === 'consents' && (
           <div>
             <div className="card" style={{ padding: '24px', marginBottom: '20px', background: 'white', borderRadius: '16px', border: '1px solid #E2E7EF' }}>
