@@ -120,11 +120,7 @@ export default function Register() {
     setError('')
     setSuccess(false)
 
-    // ============================================================
-    // ПРОВЕРКИ БЕЗОПАСНОСТИ
-    // ============================================================
-    
-    // 1. Только участник или родитель
+    // Проверки
     const allowedRoles = ['participant', 'parent']
     if (!allowedRoles.includes(role)) {
       setError('❌ Регистрация доступна только для участников и родителей')
@@ -132,35 +128,30 @@ export default function Register() {
       return
     }
 
-    // 2. Проверка email
     if (!email || !email.includes('@') || !email.includes('.')) {
       setError('❌ Введите корректный email')
       setLoading(false)
       return
     }
 
-    // 3. Проверка пароля
     if (!password || password.length < 6) {
       setError('❌ Пароль должен содержать минимум 6 символов')
       setLoading(false)
       return
     }
 
-    // 4. Проверка ФИО
     if (!fullName || fullName.trim().length < 2) {
       setError('❌ Введите ваше ФИО')
       setLoading(false)
       return
     }
 
-    // 5. Проверка даты рождения
     if (!birthDate) {
       setError('❌ Укажите дату рождения')
       setLoading(false)
       return
     }
 
-    // 6. Проверка согласий
     if (!agreeToTerms || !agreePersonalData) {
       setError('❌ Для регистрации необходимо ознакомиться с Политикой и дать согласие на обработку персональных данных')
       setLoading(false)
@@ -173,14 +164,12 @@ export default function Register() {
       return
     }
 
-    // 7. Если родитель — проверяем, что выбран ребёнок
     if (role === 'parent' && !selectedChild) {
       setError('❌ Пожалуйста, найдите и выберите своего ребёнка в системе')
       setLoading(false)
       return
     }
 
-    // 8. Проверка выбранного клуба
     if (selectedClubId) {
       const { data: clubExists } = await supabase
         .from('clubs')
@@ -195,9 +184,6 @@ export default function Register() {
       }
     }
 
-    // ============================================================
-    // РЕГИСТРАЦИЯ
-    // ============================================================
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -218,7 +204,7 @@ export default function Register() {
       if (authError) throw authError
 
       if (authData.user) {
-        // Создание профиля
+        // Создание профиля со статусом pending
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
@@ -231,7 +217,8 @@ export default function Register() {
               phone: phone || null,
               is_minor: isMinor,
               school: school || null,
-              class_name: classname || null
+              class_name: classname || null,
+              registration_status: 'pending'
             }
           ])
 
@@ -346,7 +333,7 @@ export default function Register() {
         setSuccess(true)
         setTimeout(() => {
           navigate('/login')
-        }, 2000)
+        }, 3000)
       }
     } catch (err) {
       setError('❌ Ошибка регистрации: ' + err.message)
@@ -434,7 +421,10 @@ export default function Register() {
             fontSize: '14px',
             textAlign: 'center'
           }}>
-            ✅ Регистрация успешна! Перенаправление на вход...
+            ✅ Регистрация успешна!<br />
+            <span style={{ fontSize: '13px', color: '#667085' }}>
+              Ожидайте подтверждения координатором клуба и администратором
+            </span>
           </div>
         )}
 
@@ -475,7 +465,7 @@ export default function Register() {
                 borderRadius: '8px',
                 border: '1px solid #E8D9A8'
               }}>
-                ℹ️ Остальные роли (координаторы, тьюторы, администраторы) создаются только администратором системы.
+                ℹ️ Остальные роли создаются только администратором системы.
               </div>
             </div>
           </div>
@@ -584,7 +574,6 @@ export default function Register() {
                 />
               </div>
 
-              {/* ВЫБОР КЛУБА */}
               <div className="form-group">
                 <label className="form-label">
                   🏫 Клуб юных дипломатов
