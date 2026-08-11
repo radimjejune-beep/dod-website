@@ -204,7 +204,7 @@ export default function Register() {
       if (authError) throw authError
 
       if (authData.user) {
-        // Создание профиля со статусом pending
+        // Создание профиля со статусом pending (ожидает одобрения)
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
@@ -423,7 +423,7 @@ export default function Register() {
           }}>
             ✅ Регистрация успешна!<br />
             <span style={{ fontSize: '13px', color: '#667085' }}>
-              Ожидайте подтверждения координатором клуба и администратором
+              После проверки администратором вы получите доступ
             </span>
           </div>
         )}

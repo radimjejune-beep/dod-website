@@ -71,8 +71,7 @@ export default function ImportParticipants() {
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
         const jsonData = XLSX.utils.sheet_to_json(firstSheet)
 
-        // Проверяем структуру
-        const requiredColumns = ['full_name', 'email', 'school']
+        const requiredColumns = ['full_name', 'email']
         const firstRow = jsonData[0] || {}
         const missingColumns = requiredColumns.filter(col => !(col in firstRow))
 
@@ -82,10 +81,6 @@ export default function ImportParticipants() {
           return
         }
 
-        // Добавляем колонку с клубом если есть
-        const hasClubColumn = 'club' in firstRow || 'club_name' in firstRow
-
-        // Форматируем данные для предпросмотра
         const formattedData = jsonData.map((row, index) => ({
           index: index + 1,
           full_name: row.full_name || '',
@@ -124,7 +119,6 @@ export default function ImportParticipants() {
     let successCount = 0
     const errorList = []
 
-    // Получаем список клубов для быстрого поиска
     const clubsMap = {}
     clubs.forEach(c => {
       clubsMap[c.name.toLowerCase()] = c.id
@@ -132,7 +126,6 @@ export default function ImportParticipants() {
 
     for (const row of previewData) {
       try {
-        // Проверяем, есть ли пользователь с таким email
         const { data: existingUser } = await supabase
           .from('profiles')
           .select('id')
@@ -144,10 +137,8 @@ export default function ImportParticipants() {
           continue
         }
 
-        // Генерируем временный пароль
         const tempPassword = Math.random().toString(36).slice(-8) + '!'
 
-        // Создаём пользователя в Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: row.email,
           password: tempPassword,
@@ -158,8 +149,7 @@ export default function ImportParticipants() {
               birth_date: row.birth_date || null,
               phone: row.phone || '',
               school: row.school || '',
-              class_name: row.class_name || '',
-              registration_status: 'pending'
+              class_name: row.class_name || ''
             }
           }
         })
@@ -170,7 +160,9 @@ export default function ImportParticipants() {
         }
 
         if (authData.user) {
-          // Создаём профиль
+          // ============================================================
+          // СОЗДАНИЕ ПРОФИЛЯ СО СТАТУСОМ 'approved'
+          // ============================================================
           const { error: profileError } = await supabase
             .from('profiles')
             .insert([
@@ -183,7 +175,7 @@ export default function ImportParticipants() {
                 phone: row.phone || '',
                 school: row.school || '',
                 class_name: row.class_name || '',
-                registration_status: 'pending'
+                registration_status: 'approved'  // ← СРАЗУ ОДОБРЕН
               }
             ])
 
@@ -199,7 +191,6 @@ export default function ImportParticipants() {
             if (clubsMap[clubName]) {
               clubId = clubsMap[clubName]
             } else {
-              // Ищем частичное совпадение
               const foundClub = clubs.find(c => 
                 c.name.toLowerCase().includes(clubName) || 
                 clubName.includes(c.name.toLowerCase())
@@ -271,7 +262,6 @@ export default function ImportParticipants() {
     const ws = XLSX.utils.json_to_sheet(template)
     XLSX.utils.book_append_sheet(wb, ws, 'Участники')
     
-    // Устанавливаем ширину колонок
     ws['!cols'] = [
       { wch: 30 },
       { wch: 30 },

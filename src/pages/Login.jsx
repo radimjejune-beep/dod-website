@@ -33,33 +33,18 @@ export default function Login() {
         if (profileError) throw profileError
 
         // ============================================================
-        // КООРДИНАТОРЫ И ТЬЮТОРЫ НЕ ПРОВЕРЯЮТСЯ
+        // ПРОВЕРКА ТОЛЬКО ДЛЯ УЧАСТНИКОВ И РОДИТЕЛЕЙ С ПЕНДИНГОМ
         // ============================================================
-        // Роли, которые создаются только администратором и имеют доступ сразу
-        const staffRoles = ['admin', 'movement_coordinator', 'club_coordinator', 'tutor']
+        const isParticipant = profileData?.role === 'participant' || profileData?.role === 'parent'
+        const isPending = profileData?.registration_status === 'pending'
 
-        // Проверка только для участников и родителей
-        if (!staffRoles.includes(profileData?.role)) {
-          if (profileData?.registration_status === 'pending') {
-            setError('⏳ Ваша заявка на регистрацию ожидает подтверждения координатором клуба')
-            setLoading(false)
-            return
-          }
-
-          if (profileData?.registration_status === 'club_approved') {
-            setError('⏳ Ваша заявка подтверждена координатором. Ожидайте одобрения администратора.')
-            setLoading(false)
-            return
-          }
-
-          if (profileData?.registration_status === 'rejected') {
-            setError('❌ Ваша заявка на регистрацию отклонена. Свяжитесь с администратором')
-            setLoading(false)
-            return
-          }
+        if (isParticipant && isPending) {
+          setError('⏳ Ваша заявка на регистрацию ожидает подтверждения. Обратитесь к администратору.')
+          setLoading(false)
+          return
         }
 
-        // Если всё ок — переходим в дашборд
+        // Если статус approved или другая роль — вход разрешён
         navigate('/dashboard')
       }
     } catch (err) {
