@@ -13,15 +13,12 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState('profile')
   const [consents, setConsents] = useState([])
   const [consentsLoading, setConsentsLoading] = useState(false)
-  const [achievements, setAchievements] = useState([])
-  const [achievementsLoading, setAchievementsLoading] = useState(false)
 
   const navigate = useNavigate()
 
   useEffect(() => {
     loadProfile()
     loadConsents()
-    loadAchievements()
   }, [])
 
   const loadProfile = async () => {
@@ -60,26 +57,6 @@ export default function Profile() {
       setConsents(data || [])
     }
     setConsentsLoading(false)
-  }
-
-  const loadAchievements = async () => {
-    setAchievementsLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setAchievementsLoading(false)
-      return
-    }
-
-    const { data, error } = await supabase
-      .from('achievements')
-      .select('*')
-      .eq('participant_id', user.id)
-      .order('achievement_date', { ascending: false })
-
-    if (!error) {
-      setAchievements(data || [])
-    }
-    setAchievementsLoading(false)
   }
 
   const handleSave = async (e) => {
@@ -256,6 +233,7 @@ export default function Profile() {
           >
             📋 Профиль
           </button>
+          
           <button
             onClick={() => setActiveTab('achievements')}
             style={{
@@ -272,24 +250,24 @@ export default function Profile() {
           >
             🏆 Достижения
           </button>
-          {(profile?.role === 'participant' || profile?.role === 'parent') && (
-            <button
-              onClick={() => setActiveTab('activities')}
-              style={{
-                padding: '10px 24px',
-                border: 'none',
-                background: activeTab === 'activities' ? '#0B1F3A' : 'transparent',
-                color: activeTab === 'activities' ? 'white' : '#667085',
-                borderRadius: '8px 8px 0 0',
-                cursor: 'pointer',
-                fontWeight: activeTab === 'activities' ? '600' : '500',
-                fontSize: '14px',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              🎯 Кружки
-            </button>
-          )}
+          
+          <button
+            onClick={() => setActiveTab('activities')}
+            style={{
+              padding: '10px 24px',
+              border: 'none',
+              background: activeTab === 'activities' ? '#0B1F3A' : 'transparent',
+              color: activeTab === 'activities' ? 'white' : '#667085',
+              borderRadius: '8px 8px 0 0',
+              cursor: 'pointer',
+              fontWeight: activeTab === 'activities' ? '600' : '500',
+              fontSize: '14px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            🎯 Кружки
+          </button>
+          
           <button
             onClick={() => setActiveTab('consents')}
             style={{
@@ -452,77 +430,27 @@ export default function Profile() {
           </form>
         )}
 
-        {/* ===== ВКЛАДКА: ДОСТИЖЕНИЯ ===== */}
+        {/* ===== ВКЛАДКА: ДОСТИЖЕНИЯ (пустая, с пояснением) ===== */}
         {activeTab === 'achievements' && (
           <div className="card" style={{ padding: '24px', background: 'white', borderRadius: '16px', border: '1px solid #E2E7EF' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#0B1F3A' }}>
-                🏆 Мои достижения
-              </h3>
-              <span style={{ fontSize: '13px', color: '#667085' }}>
-                {achievements.length} достижений
-              </span>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#0B1F3A', marginBottom: '16px' }}>
+              🏆 Мои достижения
+            </h3>
+            <div style={{ padding: '30px', textAlign: 'center', background: '#F4F6F9', borderRadius: '10px' }}>
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏆</div>
+              <p style={{ color: '#667085', fontSize: '16px' }}>Управление достижениями</p>
+              <p style={{ fontSize: '13px', color: '#98A2B3', marginTop: '4px' }}>
+                Достижения выдаются координаторами и администраторами
+              </p>
+              <p style={{ fontSize: '13px', color: '#98A2B3', marginTop: '4px' }}>
+                📌 Обратитесь к координатору вашего КЮДа для получения информации
+              </p>
             </div>
-
-            {achievementsLoading ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <div className="spinner" style={{ margin: '0 auto' }} />
-              </div>
-            ) : achievements.length === 0 ? (
-              <div style={{ padding: '30px', textAlign: 'center', background: '#F4F6F9', borderRadius: '10px' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏆</div>
-                <p style={{ color: '#667085', fontSize: '16px' }}>У вас пока нет достижений</p>
-                <p style={{ fontSize: '13px', color: '#98A2B3', marginTop: '4px' }}>
-                  Участвуйте в мероприятиях и получайте награды!
-                </p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {achievements.map((a) => (
-                  <div
-                    key={a.id}
-                    style={{
-                      padding: '14px 18px',
-                      background: '#F8FAFC',
-                      borderRadius: '10px',
-                      borderLeft: a.is_club_award ? '4px solid #C9A227' : 
-                                 a.is_tutor_award ? '4px solid #174A7E' : '4px solid #0B1F3A'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ fontSize: '28px' }}>
-                        {a.is_club_award ? '🏫' : 
-                         a.is_tutor_award ? '📚' : '🏅'}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '600', color: '#0B1F3A' }}>
-                          {a.title}
-                        </div>
-                        {a.description && (
-                          <div style={{ fontSize: '13px', color: '#667085' }}>
-                            {a.description}
-                          </div>
-                        )}
-                        <div style={{ fontSize: '12px', color: '#98A2B3', marginTop: '4px' }}>
-                          📅 {new Date(a.achievement_date || a.created_at).toLocaleDateString('ru-RU')}
-                          {a.is_club_award && (
-                            <span style={{ marginLeft: '8px', color: '#C9A227' }}>🏫 Клубная награда</span>
-                          )}
-                          {a.is_tutor_award && (
-                            <span style={{ marginLeft: '8px', color: '#174A7E' }}>📚 Награда тьютора</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
 
         {/* ===== ВКЛАДКА: КРУЖКИ ===== */}
-        {activeTab === 'activities' && (profile?.role === 'participant' || profile?.role === 'parent') && (
+        {activeTab === 'activities' && (
           <div className="card" style={{ padding: '24px', background: 'white', borderRadius: '16px', border: '1px solid #E2E7EF' }}>
             <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#0B1F3A', marginBottom: '16px' }}>
               🎯 Мои кружки и увлечения

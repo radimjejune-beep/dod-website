@@ -39,9 +39,7 @@ export default function Register() {
   
   const navigate = useNavigate()
 
-  // ============================================================
-  // ЗАГРУЗКА КЛУБОВ
-  // ============================================================
+  // Загрузка клубов
   useEffect(() => {
     loadClubs()
   }, [])
@@ -116,33 +114,90 @@ export default function Register() {
     setShowSearchResults(false)
   }
 
-  // ============================================================
-  // РЕГИСТРАЦИЯ
-  // ============================================================
   const handleRegister = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
     setSuccess(false)
 
+    // ============================================================
+    // ПРОВЕРКИ БЕЗОПАСНОСТИ
+    // ============================================================
+    
+    // 1. Только участник или родитель
+    const allowedRoles = ['participant', 'parent']
+    if (!allowedRoles.includes(role)) {
+      setError('❌ Регистрация доступна только для участников и родителей')
+      setLoading(false)
+      return
+    }
+
+    // 2. Проверка email
+    if (!email || !email.includes('@') || !email.includes('.')) {
+      setError('❌ Введите корректный email')
+      setLoading(false)
+      return
+    }
+
+    // 3. Проверка пароля
+    if (!password || password.length < 6) {
+      setError('❌ Пароль должен содержать минимум 6 символов')
+      setLoading(false)
+      return
+    }
+
+    // 4. Проверка ФИО
+    if (!fullName || fullName.trim().length < 2) {
+      setError('❌ Введите ваше ФИО')
+      setLoading(false)
+      return
+    }
+
+    // 5. Проверка даты рождения
+    if (!birthDate) {
+      setError('❌ Укажите дату рождения')
+      setLoading(false)
+      return
+    }
+
+    // 6. Проверка согласий
     if (!agreeToTerms || !agreePersonalData) {
-      setError('Для регистрации необходимо ознакомиться с Политикой и дать согласие на обработку персональных данных')
+      setError('❌ Для регистрации необходимо ознакомиться с Политикой и дать согласие на обработку персональных данных')
       setLoading(false)
       return
     }
 
     if (isMinor && !agreeMinorData) {
-      setError('Для регистрации несовершеннолетнего необходимо согласие законного представителя')
+      setError('❌ Для регистрации несовершеннолетнего необходимо согласие законного представителя')
       setLoading(false)
       return
     }
 
+    // 7. Если родитель — проверяем, что выбран ребёнок
     if (role === 'parent' && !selectedChild) {
-      setError('Пожалуйста, найдите и выберите своего ребёнка в системе')
+      setError('❌ Пожалуйста, найдите и выберите своего ребёнка в системе')
       setLoading(false)
       return
     }
 
+    // 8. Проверка выбранного клуба
+    if (selectedClubId) {
+      const { data: clubExists } = await supabase
+        .from('clubs')
+        .select('id')
+        .eq('id', selectedClubId)
+        .single()
+      
+      if (!clubExists) {
+        setError('❌ Выбранный клуб не существует')
+        setLoading(false)
+        return
+      }
+    }
+
+    // ============================================================
+    // РЕГИСТРАЦИЯ
+    // ============================================================
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -163,9 +218,7 @@ export default function Register() {
       if (authError) throw authError
 
       if (authData.user) {
-        // ============================================================
-        // СОЗДАНИЕ ПРОФИЛЯ
-        // ============================================================
+        // Создание профиля
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
@@ -184,9 +237,7 @@ export default function Register() {
 
         if (profileError) throw profileError
 
-        // ============================================================
-        // ПРИВЯЗКА К КЛУБУ (если участник выбрал клуб)
-        // ============================================================
+        // Привязка к клубу
         if (role === 'participant' && selectedClubId) {
           const { error: clubError } = await supabase
             .from('club_participants')
@@ -200,14 +251,10 @@ export default function Register() {
 
           if (clubError) {
             console.error('Ошибка привязки к клубу:', clubError)
-          } else {
-            console.log('✅ Участник привязан к клубу')
           }
         }
 
-        // ============================================================
-        // ПРИВЯЗКА К РОДИТЕЛЮ (если родитель)
-        // ============================================================
+        // Привязка родителя к ребёнку
         if (role === 'parent' && selectedChild) {
           const { error: relationError } = await supabase
             .from('parent_child_relations')
@@ -222,9 +269,7 @@ export default function Register() {
           if (relationError) throw relationError
         }
 
-        // ============================================================
-        // СОХРАНЕНИЕ СОГЛАСИЙ
-        // ============================================================
+        // Сохранение согласий
         const consents = [
           {
             user_id: authData.user.id,
@@ -304,7 +349,7 @@ export default function Register() {
         }, 2000)
       }
     } catch (err) {
-      setError(err.message)
+      setError('❌ Ошибка регистрации: ' + err.message)
     }
     setLoading(false)
   }
@@ -421,6 +466,17 @@ export default function Register() {
                 {role === 'participant' && '👤 Участник: запись на мероприятия, просмотр профиля, достижения'}
                 {role === 'parent' && '👨‍👩‍👦 Родитель: управление профилем ребёнка, запись на мероприятия'}
               </div>
+              <div style={{
+                fontSize: '11px',
+                color: '#98A2B3',
+                marginTop: '6px',
+                padding: '8px',
+                background: '#FBF4DC',
+                borderRadius: '8px',
+                border: '1px solid #E8D9A8'
+              }}>
+                ℹ️ Остальные роли (координаторы, тьюторы, администраторы) создаются только администратором системы.
+              </div>
             </div>
           </div>
 
@@ -431,7 +487,7 @@ export default function Register() {
             </h4>
 
             <div className="form-group">
-              <label className="form-label">ФИО</label>
+              <label className="form-label">ФИО *</label>
               <input
                 type="text"
                 className="form-input"
@@ -443,7 +499,7 @@ export default function Register() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Дата рождения</label>
+              <label className="form-label">Дата рождения *</label>
               <input
                 type="date"
                 className="form-input"
@@ -474,7 +530,7 @@ export default function Register() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Email</label>
+              <label className="form-label">Email *</label>
               <input
                 type="email"
                 className="form-input"
@@ -486,7 +542,7 @@ export default function Register() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Пароль (мин. 6 символов)</label>
+              <label className="form-label">Пароль (мин. 6 символов) *</label>
               <input
                 type="password"
                 className="form-input"
@@ -528,9 +584,7 @@ export default function Register() {
                 />
               </div>
 
-              {/* ============================================================
-                  ВЫБОР КЛУБА ДЛЯ УЧАСТНИКА
-                  ============================================================ */}
+              {/* ВЫБОР КЛУБА */}
               <div className="form-group">
                 <label className="form-label">
                   🏫 Клуб юных дипломатов
@@ -551,16 +605,6 @@ export default function Register() {
                     </option>
                   ))}
                 </select>
-                {loadingClubs && (
-                  <div style={{ fontSize: '12px', color: '#98A2B3', marginTop: '4px' }}>
-                    ⏳ Загрузка клубов...
-                  </div>
-                )}
-                {!loadingClubs && clubs.length === 0 && (
-                  <div style={{ fontSize: '12px', color: '#C9A227', marginTop: '4px' }}>
-                    ⚠️ Клубы ещё не созданы. Вы сможете привязаться позже.
-                  </div>
-                )}
                 {selectedClubId && (
                   <div style={{
                     fontSize: '12px',
@@ -694,13 +738,14 @@ export default function Register() {
               </h4>
 
               <div className="form-group">
-                <label className="form-label">ФИО законного представителя</label>
+                <label className="form-label">ФИО законного представителя *</label>
                 <input
                   type="text"
                   className="form-input"
                   value={parentFullName}
                   onChange={(e) => setParentFullName(e.target.value)}
                   placeholder="Иванов Иван Иванович"
+                  required={isMinor}
                 />
               </div>
 

@@ -25,29 +25,44 @@ export default function Navigation({ profile }) {
     ]
 
     const roleItems = {
+      // ============================================
+      // УЧАСТНИК
+      // ============================================
       'participant': [
         { path: '/events', label: 'Мероприятия', roles: ['participant'] },
         { path: '/my-achievements', label: 'Мои достижения', roles: ['participant'] },
         { path: '/my-reviews', label: '📊 Мои оценки', roles: ['participant'] },
         { path: '/president-tasks', label: '👑 Задания президента', roles: ['participant'] },
       ],
+
+      // ============================================
+      // РОДИТЕЛЬ
+      // ============================================
       'parent': [
         { path: '/events', label: 'Мероприятия', roles: ['parent'] },
         { path: '/my-achievements', label: 'Достижения ребенка', roles: ['parent'] },
         { path: '/my-reviews', label: '📊 Оценки ребенка', roles: ['parent'] },
       ],
+
+      // ============================================
+      // КООРДИНАТОР КЮДА
+      // ============================================
       'club_coordinator': [
         { path: '/clubs', label: 'Мой КЮД', roles: ['club_coordinator'] },
         { path: '/president-tasks', label: '👑 Задания президента', roles: ['club_coordinator'] },
         { path: '/events', label: 'Мероприятия', roles: ['club_coordinator'] },
         { path: '/participants', label: 'Участники', roles: ['club_coordinator'] },
-        { path: '/achievements', label: 'Достижения клуба', roles: ['club_coordinator'] },
+        { path: '/manage-achievements', label: '🏆 Достижения клуба', roles: ['club_coordinator'] },
         { path: '/my-reviews', label: '📊 Оценки клуба', roles: ['club_coordinator'] },
         { path: '/reports', label: 'Отчёты', roles: ['club_coordinator'] },
         { path: '/club-analytics', label: 'Аналитика клуба', roles: ['club_coordinator'] },
         { path: '/staff', label: 'Сотрудники', roles: ['club_coordinator'] },
         { path: '/staff-calendar', label: 'Календарь', roles: ['club_coordinator'] },
       ],
+
+      // ============================================
+      // ТЬЮТОР
+      // ============================================
       'tutor': [
         { path: '/clubs', label: 'КЮДы', roles: ['tutor'] },
         { path: '/events', label: 'Мероприятия', roles: ['tutor'] },
@@ -58,6 +73,10 @@ export default function Navigation({ profile }) {
         { path: '/staff', label: 'Приглашения', roles: ['tutor'] },
         { path: '/my-journal', label: 'Мой журнал', roles: ['tutor'] },
       ],
+
+      // ============================================
+      // КООРДИНАТОР ДВИЖЕНИЯ
+      // ============================================
       'movement_coordinator': [
         { path: '/dashboard', label: 'Дашборд', roles: ['movement_coordinator'] },
         { path: '/president-tasks', label: '👑 Задания президента', roles: ['movement_coordinator'] },
@@ -65,6 +84,7 @@ export default function Navigation({ profile }) {
         { path: '/events', label: 'Мероприятия', roles: ['movement_coordinator'] },
         { path: '/participants', label: 'Участники', roles: ['movement_coordinator'] },
         { path: '/achievements', label: 'Достижения', roles: ['movement_coordinator'] },
+        { path: '/manage-achievements', label: '🏆 Управление достижениями', roles: ['movement_coordinator'] },
         { path: '/my-reviews', label: '📊 Оценки', roles: ['movement_coordinator'] },
         { path: '/reports', label: 'Отчёты', roles: ['movement_coordinator'] },
         { path: '/analytics', label: 'Аналитика', roles: ['movement_coordinator'] },
@@ -75,6 +95,10 @@ export default function Navigation({ profile }) {
         { path: '/staff-calendar', label: 'Календарь', roles: ['movement_coordinator'] },
         { path: '/club-analytics', label: 'Аналитика клубов', roles: ['movement_coordinator'] },
       ],
+
+      // ============================================
+      // АДМИН
+      // ============================================
       'admin': [
         { path: '/dashboard', label: 'Дашборд', roles: ['admin'] },
         { path: '/president-tasks', label: '👑 Задания президента', roles: ['admin'] },
@@ -82,6 +106,7 @@ export default function Navigation({ profile }) {
         { path: '/events', label: 'Мероприятия', roles: ['admin'] },
         { path: '/participants', label: 'Участники', roles: ['admin'] },
         { path: '/achievements', label: 'Достижения', roles: ['admin'] },
+        { path: '/manage-achievements', label: '🏆 Управление достижениями', roles: ['admin'] },
         { path: '/my-reviews', label: '📊 Оценки', roles: ['admin'] },
         { path: '/reports', label: 'Отчёты', roles: ['admin'] },
         { path: '/analytics', label: 'Аналитика', roles: ['admin'] },
@@ -120,13 +145,13 @@ export default function Navigation({ profile }) {
       ['/events', '/calendar', '/participants'].includes(item.path)
     ),
     clubs: menuItems.filter(item => 
-      ['/clubs', '/club-analytics', '/my-reviews', '/achievements'].includes(item.path)
+      ['/clubs', '/club-analytics', '/my-reviews', '/achievements', '/manage-achievements'].includes(item.path)
     ),
     settings: menuItems.filter(item => 
       ['/settings', '/admin/invite', '/admin/users', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
     ),
     other: menuItems.filter(item => 
-      !['/', '/profile', '/dashboard', '/events', '/calendar', '/participants', '/clubs', '/club-analytics', '/my-reviews', '/achievements', '/settings', '/admin/invite', '/admin/users', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
+      !['/', '/profile', '/dashboard', '/events', '/calendar', '/participants', '/clubs', '/club-analytics', '/my-reviews', '/achievements', '/manage-achievements', '/settings', '/admin/invite', '/admin/users', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
     )
   }
 

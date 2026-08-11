@@ -18,6 +18,7 @@ import Reports from './pages/Reports'
 import Legal from './pages/Legal'
 import AdminInvite from './pages/AdminInvite'
 import AdminUsers from './pages/AdminUsers'
+import ManageAchievements from './pages/ManageAchievements'
 import EventParticipants from './pages/EventParticipants'
 import StaffManagement from './pages/StaffManagement'
 import StaffCalendar from './pages/StaffCalendar'
@@ -102,6 +103,9 @@ function App() {
             } />
             <Route path="/admin/users" element={
               <ProtectedRoute><AdminUsers /></ProtectedRoute>
+            } />
+            <Route path="/manage-achievements" element={
+              <ProtectedRoute><ManageAchievements /></ProtectedRoute>
             } />
             <Route path="/event/:eventId/participants" element={
               <ProtectedRoute><EventParticipants /></ProtectedRoute>
