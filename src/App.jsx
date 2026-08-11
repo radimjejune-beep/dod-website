@@ -21,6 +21,7 @@ import AdminUsers from './pages/AdminUsers'
 import ManageAchievements from './pages/ManageAchievements'
 import ClubRegistrationRequests from './pages/ClubRegistrationRequests'
 import RegistrationRequests from './pages/RegistrationRequests'
+import ImportParticipants from './pages/ImportParticipants'
 import EventParticipants from './pages/EventParticipants'
 import StaffManagement from './pages/StaffManagement'
 import StaffCalendar from './pages/StaffCalendar'
@@ -114,6 +115,9 @@ function App() {
             } />
             <Route path="/registration-requests" element={
               <ProtectedRoute><RegistrationRequests /></ProtectedRoute>
+            } />
+            <Route path="/import-participants" element={
+              <ProtectedRoute><ImportParticipants /></ProtectedRoute>
             } />
             <Route path="/event/:eventId/participants" element={
               <ProtectedRoute><EventParticipants /></ProtectedRoute>

@@ -93,6 +93,7 @@ export default function Navigation({ profile }) {
         { path: '/admin/invite', label: 'Пригласить', roles: ['movement_coordinator'] },
         { path: '/admin/users', label: '👥 Управление пользователями', roles: ['movement_coordinator'] },
         { path: '/registration-requests', label: '📋 Одобрение доступа', roles: ['movement_coordinator'] },
+        { path: '/import-participants', label: '📥 Импорт участников', roles: ['movement_coordinator'] },
         { path: '/staff', label: 'Сотрудники', roles: ['movement_coordinator'] },
         { path: '/staff-calendar', label: 'Календарь', roles: ['movement_coordinator'] },
         { path: '/club-analytics', label: 'Аналитика клубов', roles: ['movement_coordinator'] },
@@ -116,6 +117,7 @@ export default function Navigation({ profile }) {
         { path: '/admin/invite', label: 'Пригласить', roles: ['admin'] },
         { path: '/admin/users', label: '👥 Управление пользователями', roles: ['admin'] },
         { path: '/registration-requests', label: '📋 Одобрение доступа', roles: ['admin'] },
+        { path: '/import-participants', label: '📥 Импорт участников', roles: ['admin'] },
         { path: '/staff', label: 'Сотрудники', roles: ['admin'] },
         { path: '/staff-calendar', label: 'Календарь', roles: ['admin'] },
         { path: '/club-analytics', label: 'Аналитика клубов', roles: ['admin'] },
@@ -151,10 +153,10 @@ export default function Navigation({ profile }) {
       ['/clubs', '/club-analytics', '/my-reviews', '/achievements', '/manage-achievements', '/club-registration-requests'].includes(item.path)
     ),
     settings: menuItems.filter(item => 
-      ['/settings', '/admin/invite', '/admin/users', '/registration-requests', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
+      ['/settings', '/admin/invite', '/admin/users', '/registration-requests', '/import-participants', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
     ),
     other: menuItems.filter(item => 
-      !['/', '/profile', '/dashboard', '/events', '/calendar', '/participants', '/clubs', '/club-analytics', '/my-reviews', '/achievements', '/manage-achievements', '/club-registration-requests', '/settings', '/admin/invite', '/admin/users', '/registration-requests', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
+      !['/', '/profile', '/dashboard', '/events', '/calendar', '/participants', '/clubs', '/club-analytics', '/my-reviews', '/achievements', '/manage-achievements', '/club-registration-requests', '/settings', '/admin/invite', '/admin/users', '/registration-requests', '/import-participants', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
     )
   }
 

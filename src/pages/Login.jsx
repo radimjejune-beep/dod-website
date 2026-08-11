@@ -24,31 +24,39 @@ export default function Login() {
       if (authError) throw authError
 
       if (data.user) {
-        // Проверяем статус регистрации
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('registration_status')
+          .select('registration_status, role')
           .eq('id', data.user.id)
           .single()
 
         if (profileError) throw profileError
 
-        if (profileData?.registration_status === 'pending') {
-          setError('⏳ Ваша заявка на регистрацию ожидает подтверждения координатором клуба')
-          setLoading(false)
-          return
-        }
+        // ============================================================
+        // КООРДИНАТОРЫ И ТЬЮТОРЫ НЕ ПРОВЕРЯЮТСЯ
+        // ============================================================
+        // Роли, которые создаются только администратором и имеют доступ сразу
+        const staffRoles = ['admin', 'movement_coordinator', 'club_coordinator', 'tutor']
 
-        if (profileData?.registration_status === 'club_approved') {
-          setError('⏳ Ваша заявка подтверждена координатором. Ожидайте одобрения администратора.')
-          setLoading(false)
-          return
-        }
+        // Проверка только для участников и родителей
+        if (!staffRoles.includes(profileData?.role)) {
+          if (profileData?.registration_status === 'pending') {
+            setError('⏳ Ваша заявка на регистрацию ожидает подтверждения координатором клуба')
+            setLoading(false)
+            return
+          }
 
-        if (profileData?.registration_status === 'rejected') {
-          setError('❌ Ваша заявка на регистрацию отклонена. Свяжитесь с администратором')
-          setLoading(false)
-          return
+          if (profileData?.registration_status === 'club_approved') {
+            setError('⏳ Ваша заявка подтверждена координатором. Ожидайте одобрения администратора.')
+            setLoading(false)
+            return
+          }
+
+          if (profileData?.registration_status === 'rejected') {
+            setError('❌ Ваша заявка на регистрацию отклонена. Свяжитесь с администратором')
+            setLoading(false)
+            return
+          }
         }
 
         // Если всё ок — переходим в дашборд
