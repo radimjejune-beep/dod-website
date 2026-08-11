@@ -6,6 +6,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import Events from './pages/Events'
+import CalendarPage from './pages/Calendar'
 import Settings from './pages/Settings'
 import Participants from './pages/Participants'
 import ParticipantProfile from './pages/ParticipantProfile'
@@ -13,7 +14,17 @@ import Clubs from './pages/Clubs'
 import ClubDetail from './pages/ClubDetail'
 import Achievements from './pages/Achievements'
 import DashboardAnalytics from './pages/DashboardAnalytics'
-import TestAchievements from './pages/TestAchievements'
+import Reports from './pages/Reports'
+import Legal from './pages/Legal'
+import AdminInvite from './pages/AdminInvite'
+import EventParticipants from './pages/EventParticipants'
+import StaffManagement from './pages/StaffManagement'
+import StaffCalendar from './pages/StaffCalendar'
+import TutorJournal from './pages/TutorJournal'
+import MyJournal from './pages/MyJournal'
+import ClubAnalytics from './pages/ClubAnalytics'
+import MyAchievements from './pages/MyAchievements'
+import NewsDetail from './pages/NewsDetail'
 import ProtectedRoute from './components/ProtectedRoute'
 import Footer from './components/Footer'
 
@@ -28,7 +39,11 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             
-            <Route path="/test" element={<TestAchievements />} />
+            {/* Публичная страница новости */}
+            <Route path="/news/:id" element={<NewsDetail />} />
+            
+            {/* Юридические страницы (доступны всем) */}
+            <Route path="/legal/:document" element={<Legal />} />
             
             {/* Защищённые страницы */}
             <Route path="/dashboard" element={
@@ -39,6 +54,9 @@ function App() {
             } />
             <Route path="/events" element={
               <ProtectedRoute><Events /></ProtectedRoute>
+            } />
+            <Route path="/calendar" element={
+              <ProtectedRoute><CalendarPage /></ProtectedRoute>
             } />
             <Route path="/settings" element={
               <ProtectedRoute><Settings /></ProtectedRoute>
@@ -58,8 +76,35 @@ function App() {
             <Route path="/achievements" element={
               <ProtectedRoute><Achievements /></ProtectedRoute>
             } />
+            <Route path="/my-achievements" element={
+              <ProtectedRoute><MyAchievements /></ProtectedRoute>
+            } />
             <Route path="/analytics" element={
               <ProtectedRoute><DashboardAnalytics /></ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute><Reports /></ProtectedRoute>
+            } />
+            <Route path="/admin/invite" element={
+              <ProtectedRoute><AdminInvite /></ProtectedRoute>
+            } />
+            <Route path="/event/:eventId/participants" element={
+              <ProtectedRoute><EventParticipants /></ProtectedRoute>
+            } />
+            <Route path="/staff" element={
+              <ProtectedRoute><StaffManagement /></ProtectedRoute>
+            } />
+            <Route path="/staff-calendar" element={
+              <ProtectedRoute><StaffCalendar /></ProtectedRoute>
+            } />
+            <Route path="/tutor-journal/:eventId" element={
+              <ProtectedRoute><TutorJournal /></ProtectedRoute>
+            } />
+            <Route path="/my-journal" element={
+              <ProtectedRoute><MyJournal /></ProtectedRoute>
+            } />
+            <Route path="/club-analytics" element={
+              <ProtectedRoute><ClubAnalytics /></ProtectedRoute>
             } />
           </Routes>
         </div>

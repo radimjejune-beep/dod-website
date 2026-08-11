@@ -21,7 +21,7 @@ export default function Settings() {
   // ===== ПОЛЬЗОВАТЕЛИ =====
   const [users, setUsers] = useState([])
 
-  // ===== КЮДЫ =====
+  // ===== КЮДы =====
   const [clubsList, setClubsList] = useState([])
   const [usersList, setUsersList] = useState([])
   const [clubCoordinators, setClubCoordinators] = useState([])
@@ -32,8 +32,8 @@ export default function Settings() {
   const [settings, setSettings] = useState({
     heroTitle: 'Добро пожаловать в ДОД «Дипломаты будущего»',
     heroSubtitle: 'Система управления движением',
-    primaryColor: '#0B2B4A',
-    accentColor: '#C9A845',
+    primaryColor: '#0B1F3A',
+    accentColor: '#C9A227',
     siteName: 'Дипломаты будущего',
   })
   const [settingsMessage, setSettingsMessage] = useState('')
@@ -238,20 +238,42 @@ export default function Settings() {
     setCoordinatorMessage('')
     setLoading(true)
 
-    const { error } = await supabase
-      .from('club_coordinators')
-      .insert([{
-        club_id: coordinatorForm.club_id,
-        profile_id: coordinatorForm.profile_id
-      }])
+    try {
+      // Проверяем, есть ли уже привязка у этого пользователя
+      const { data: existing, error: checkError } = await supabase
+        .from('club_coordinators')
+        .select('id')
+        .eq('profile_id', coordinatorForm.profile_id)
 
-    if (error) {
-      setCoordinatorMessage('❌ Ошибка: ' + error.message)
-    } else {
-      setCoordinatorMessage('✅ Координатор назначен!')
-      setCoordinatorForm({ club_id: '', profile_id: '' })
+      if (checkError) throw checkError
+
+      if (existing && existing.length > 0) {
+        // Обновляем существующую привязку
+        const { error: updateError } = await supabase
+          .from('club_coordinators')
+          .update({ club_id: coordinatorForm.club_id })
+          .eq('profile_id', coordinatorForm.profile_id)
+
+        if (updateError) throw updateError
+        setCoordinatorMessage('✅ Привязка обновлена!')
+      } else {
+        // Создаём новую привязку
+        const { error: insertError } = await supabase
+          .from('club_coordinators')
+          .insert([{
+            profile_id: coordinatorForm.profile_id,
+            club_id: coordinatorForm.club_id
+          }])
+
+        if (insertError) throw insertError
+        setCoordinatorMessage('✅ Координатор назначен!')
+      }
+
       loadClubsData()
+      setCoordinatorForm({ club_id: '', profile_id: '' })
       setTimeout(() => setCoordinatorMessage(''), 3000)
+    } catch (err) {
+      setCoordinatorMessage('❌ Ошибка: ' + err.message)
     }
     setLoading(false)
   }
@@ -344,7 +366,7 @@ export default function Settings() {
         <Navigation profile={profile} />
         <div className="container" style={{ paddingTop: '50px', textAlign: 'center' }}>
           <h1>⛔ Доступ запрещён</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>
+          <p style={{ color: '#667085' }}>
             Только администратор или координатор движения
           </p>
         </div>
@@ -366,7 +388,7 @@ export default function Settings() {
       
       <div className="container" style={{ paddingTop: '30px' }}>
         <h1>⚙️ Настройки сайта</h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
+        <p style={{ color: '#667085', marginBottom: '24px' }}>
           Управление контентом и настройками системы
         </p>
 
@@ -375,7 +397,7 @@ export default function Settings() {
           display: 'flex',
           gap: '4px',
           marginBottom: '24px',
-          borderBottom: '2px solid var(--gray-border)',
+          borderBottom: '2px solid #E2E7EF',
           paddingBottom: '4px',
           flexWrap: 'wrap'
         }}>
@@ -384,11 +406,12 @@ export default function Settings() {
             style={{
               padding: '10px 20px',
               border: 'none',
-              background: activeTab === 'news' ? 'var(--mid-blue)' : 'transparent',
-              color: activeTab === 'news' ? 'white' : 'var(--text-secondary)',
-              borderRadius: '8px',
+              background: activeTab === 'news' ? '#0B1F3A' : 'transparent',
+              color: activeTab === 'news' ? 'white' : '#667085',
+              borderRadius: '8px 8px 0 0',
               cursor: 'pointer',
               fontWeight: activeTab === 'news' ? '600' : '500',
+              fontSize: '14px',
               transition: 'all 0.2s ease'
             }}
           >
@@ -399,11 +422,12 @@ export default function Settings() {
             style={{
               padding: '10px 20px',
               border: 'none',
-              background: activeTab === 'users' ? 'var(--mid-blue)' : 'transparent',
-              color: activeTab === 'users' ? 'white' : 'var(--text-secondary)',
-              borderRadius: '8px',
+              background: activeTab === 'users' ? '#0B1F3A' : 'transparent',
+              color: activeTab === 'users' ? 'white' : '#667085',
+              borderRadius: '8px 8px 0 0',
               cursor: 'pointer',
               fontWeight: activeTab === 'users' ? '600' : '500',
+              fontSize: '14px',
               transition: 'all 0.2s ease'
             }}
           >
@@ -414,11 +438,12 @@ export default function Settings() {
             style={{
               padding: '10px 20px',
               border: 'none',
-              background: activeTab === 'clubs' ? 'var(--mid-blue)' : 'transparent',
-              color: activeTab === 'clubs' ? 'white' : 'var(--text-secondary)',
-              borderRadius: '8px',
+              background: activeTab === 'clubs' ? '#0B1F3A' : 'transparent',
+              color: activeTab === 'clubs' ? 'white' : '#667085',
+              borderRadius: '8px 8px 0 0',
               cursor: 'pointer',
               fontWeight: activeTab === 'clubs' ? '600' : '500',
+              fontSize: '14px',
               transition: 'all 0.2s ease'
             }}
           >
@@ -430,10 +455,11 @@ export default function Settings() {
               padding: '10px 20px',
               border: 'none',
               background: 'transparent',
-              color: 'var(--text-secondary)',
-              borderRadius: '8px',
+              color: '#667085',
+              borderRadius: '8px 8px 0 0',
               cursor: 'pointer',
               fontWeight: '500',
+              fontSize: '14px',
               transition: 'all 0.2s ease'
             }}
           >
@@ -444,11 +470,12 @@ export default function Settings() {
             style={{
               padding: '10px 20px',
               border: 'none',
-              background: activeTab === 'general' ? 'var(--mid-blue)' : 'transparent',
-              color: activeTab === 'general' ? 'white' : 'var(--text-secondary)',
-              borderRadius: '8px',
+              background: activeTab === 'general' ? '#0B1F3A' : 'transparent',
+              color: activeTab === 'general' ? 'white' : '#667085',
+              borderRadius: '8px 8px 0 0',
               cursor: 'pointer',
               fontWeight: activeTab === 'general' ? '600' : '500',
+              fontSize: '14px',
               transition: 'all 0.2s ease'
             }}
           >
@@ -520,7 +547,7 @@ export default function Settings() {
                         maxWidth: '100%',
                         maxHeight: '150px',
                         borderRadius: '8px',
-                        border: '2px solid var(--gray-border)'
+                        border: '2px solid #E2E7EF'
                       }} />
                     </div>
                   )}
@@ -531,7 +558,7 @@ export default function Settings() {
                     {newsLoading ? '⏳ Сохранение...' : editingNewsId ? '💾 Обновить' : '➕ Создать'}
                   </button>
                   {editingNewsId && (
-                    <button type="button" className="btn btn-outline" onClick={resetNewsForm}>
+                    <button type="button" className="btn btn-secondary" onClick={resetNewsForm}>
                       ❌ Отменить
                     </button>
                   )}
@@ -560,20 +587,20 @@ export default function Settings() {
                     )}
                     <div style={{ flex: 1 }}>
                       <h4 style={{ fontSize: '15px', marginBottom: '2px' }}>{item.title}</h4>
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      <p style={{ fontSize: '12px', color: '#667085' }}>
                         📅 {new Date(item.created_at).toLocaleDateString('ru-RU')}
                       </p>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                       <button
-                        className="btn btn-outline"
+                        className="btn btn-secondary"
                         onClick={() => handleEditNews(item)}
                         style={{ padding: '6px 12px', fontSize: '12px' }}
                       >
                         ✏️
                       </button>
                       <button
-                        className="btn btn-red"
+                        className="btn btn-danger"
                         onClick={() => handleDeleteNews(item.id)}
                         style={{ padding: '6px 12px', fontSize: '12px' }}
                       >
@@ -592,9 +619,9 @@ export default function Settings() {
             ============================================================ */}
         {activeTab === 'users' && (
           <div className="card" style={{ padding: '0', overflow: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid var(--gray-border)', background: 'var(--gray-light)' }}>
+                <tr style={{ borderBottom: '2px solid #E2E7EF', background: '#F4F6F9' }}>
                   <th style={{ padding: '12px 16px', textAlign: 'left' }}>ФИО</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left' }}>Email</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left' }}>Роль</th>
@@ -603,13 +630,13 @@ export default function Settings() {
               <tbody>
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan="3" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    <td colSpan="3" style={{ padding: '30px', textAlign: 'center', color: '#667085' }}>
                       Пользователей пока нет
                     </td>
                   </tr>
                 ) : (
                   users.map((user) => (
-                    <tr key={user.id} style={{ borderBottom: '1px solid var(--gray-border)' }}>
+                    <tr key={user.id} style={{ borderBottom: '1px solid #E2E7EF' }}>
                       <td style={{ padding: '12px 16px' }}>{user.full_name || 'Без имени'}</td>
                       <td style={{ padding: '12px 16px' }}>{user.email}</td>
                       <td style={{ padding: '12px 16px' }}>
@@ -617,7 +644,15 @@ export default function Settings() {
                           value={user.role || 'participant'}
                           onChange={(e) => handleRoleChange(user.id, e.target.value)}
                           className="form-select"
-                          style={{ width: 'auto', padding: '6px 12px', fontSize: '13px' }}
+                          style={{ 
+                            width: 'auto', 
+                            padding: '6px 12px', 
+                            fontSize: '13px',
+                            border: '1.5px solid #D5DCE7',
+                            borderRadius: '8px',
+                            outline: 'none',
+                            background: 'white'
+                          }}
                         >
                           <option value="participant">👤 Участник</option>
                           <option value="parent">👨‍👩‍👦 Родитель</option>
@@ -664,6 +699,15 @@ export default function Settings() {
                     value={coordinatorForm.club_id}
                     onChange={(e) => setCoordinatorForm({ ...coordinatorForm, club_id: e.target.value })}
                     required
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      border: '1.5px solid #D5DCE7',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      background: 'white'
+                    }}
                   >
                     <option value="">Выберите КЮД</option>
                     {clubsList.map((club) => (
@@ -679,15 +723,38 @@ export default function Settings() {
                     value={coordinatorForm.profile_id}
                     onChange={(e) => setCoordinatorForm({ ...coordinatorForm, profile_id: e.target.value })}
                     required
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      border: '1.5px solid #D5DCE7',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      background: 'white'
+                    }}
                   >
                     <option value="">Выберите пользователя</option>
-                    {usersList.filter(u => u.role === 'club_coordinator' || u.role === 'admin' || u.role === 'movement_coordinator').map((u) => (
+                    {usersList.map((u) => (
                       <option key={u.id} value={u.id}>{u.full_name} ({u.role})</option>
                     ))}
                   </select>
                 </div>
 
-                <button type="submit" className="btn btn-primary" disabled={loading}>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  disabled={loading}
+                  style={{
+                    padding: '10px 28px',
+                    background: '#0B1F3A',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
                   {loading ? '⏳ Назначение...' : '✅ Назначить'}
                 </button>
               </form>
@@ -696,9 +763,9 @@ export default function Settings() {
             <h3 style={{ marginBottom: '16px' }}>📋 Назначенные координаторы</h3>
 
             <div className="card" style={{ padding: '0', overflow: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid var(--gray-border)', background: 'var(--gray-light)' }}>
+                  <tr style={{ borderBottom: '2px solid #E2E7EF', background: '#F4F6F9' }}>
                     <th style={{ padding: '12px 16px', textAlign: 'left' }}>КЮД</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left' }}>Координатор</th>
                     <th style={{ padding: '12px 16px', textAlign: 'center' }}>Действия</th>
@@ -707,20 +774,28 @@ export default function Settings() {
                 <tbody>
                   {clubCoordinators.length === 0 ? (
                     <tr>
-                      <td colSpan="3" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                      <td colSpan="3" style={{ padding: '30px', textAlign: 'center', color: '#667085' }}>
                         Назначений пока нет
                       </td>
                     </tr>
                   ) : (
                     clubCoordinators.map((cc) => (
-                      <tr key={cc.id} style={{ borderBottom: '1px solid var(--gray-border)' }}>
+                      <tr key={cc.id} style={{ borderBottom: '1px solid #E2E7EF' }}>
                         <td style={{ padding: '12px 16px' }}>{cc.clubs?.name || '—'}</td>
                         <td style={{ padding: '12px 16px' }}>{cc.profiles?.full_name || '—'}</td>
                         <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                           <button
-                            className="btn btn-red"
+                            className="btn btn-danger"
                             onClick={() => handleRemoveCoordinator(cc.id)}
-                            style={{ padding: '4px 12px', fontSize: '12px' }}
+                            style={{ 
+                              padding: '4px 12px', 
+                              fontSize: '12px',
+                              border: 'none',
+                              borderRadius: '6px',
+                              background: '#FCEBEC',
+                              color: '#B3262E',
+                              cursor: 'pointer'
+                            }}
                           >
                             🗑️ Удалить
                           </button>
@@ -761,6 +836,14 @@ export default function Settings() {
                 className="form-input"
                 value={settings.siteName}
                 onChange={(e) => setSettings({ ...settings, siteName: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  border: '1.5px solid #D5DCE7',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
               />
             </div>
 
@@ -771,6 +854,14 @@ export default function Settings() {
                 className="form-input"
                 value={settings.heroTitle}
                 onChange={(e) => setSettings({ ...settings, heroTitle: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  border: '1.5px solid #D5DCE7',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
               />
             </div>
 
@@ -781,6 +872,14 @@ export default function Settings() {
                 className="form-input"
                 value={settings.heroSubtitle}
                 onChange={(e) => setSettings({ ...settings, heroSubtitle: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  border: '1.5px solid #D5DCE7',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
               />
             </div>
 
@@ -792,7 +891,7 @@ export default function Settings() {
                   className="form-input"
                   value={settings.primaryColor}
                   onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
-                  style={{ padding: '4px', height: '50px' }}
+                  style={{ padding: '4px', height: '50px', width: '100%', borderRadius: '10px', border: '1.5px solid #D5DCE7' }}
                 />
               </div>
               <div className="form-group">
@@ -802,7 +901,7 @@ export default function Settings() {
                   className="form-input"
                   value={settings.accentColor}
                   onChange={(e) => setSettings({ ...settings, accentColor: e.target.value })}
-                  style={{ padding: '4px', height: '50px' }}
+                  style={{ padding: '4px', height: '50px', width: '100%', borderRadius: '10px', border: '1.5px solid #D5DCE7' }}
                 />
               </div>
             </div>
@@ -811,7 +910,18 @@ export default function Settings() {
               className="btn btn-primary"
               onClick={handleSaveSettings}
               disabled={savingSettings}
-              style={{ width: '100%', padding: '14px', marginTop: '8px' }}
+              style={{ 
+                width: '100%', 
+                padding: '14px', 
+                marginTop: '8px',
+                background: '#0B1F3A',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
             >
               {savingSettings ? '⏳ Сохранение...' : '💾 Сохранить настройки'}
             </button>

@@ -6,11 +6,11 @@ export default function Footer() {
 
   return (
     <footer style={{
-      background: '#0B2B4A',
+      background: '#0B1F3A',
       color: 'white',
       marginTop: '60px',
       padding: '40px 24px 20px',
-      borderTop: '4px solid #C9A845'
+      borderTop: '3px solid #C9A227'
     }}>
       <div style={{
         maxWidth: '1200px',
@@ -24,9 +24,9 @@ export default function Footer() {
         {/* О ДВИЖЕНИИ */}
         <div>
           <h4 style={{
-            fontSize: '16px',
+            fontSize: '15px',
             fontWeight: '700',
-            color: '#C9A845',
+            color: '#C9A227',
             marginBottom: '12px'
           }}>
             🌍 О движении
@@ -44,9 +44,9 @@ export default function Footer() {
         {/* БЫСТРЫЕ ССЫЛКИ */}
         <div>
           <h4 style={{
-            fontSize: '16px',
+            fontSize: '15px',
             fontWeight: '700',
-            color: '#C9A845',
+            color: '#C9A227',
             marginBottom: '12px'
           }}>
             📌 Быстрые ссылки
@@ -63,7 +63,7 @@ export default function Footer() {
                 fontSize: '13px',
                 transition: 'color 0.2s ease'
               }}
-              onMouseEnter={(e) => e.target.style.color = '#C9A845'}
+              onMouseEnter={(e) => e.target.style.color = '#C9A227'}
               onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
               >
                 Главная
@@ -76,7 +76,7 @@ export default function Footer() {
                 fontSize: '13px',
                 transition: 'color 0.2s ease'
               }}
-              onMouseEnter={(e) => e.target.style.color = '#C9A845'}
+              onMouseEnter={(e) => e.target.style.color = '#C9A227'}
               onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
               >
                 Мероприятия
@@ -89,10 +89,93 @@ export default function Footer() {
                 fontSize: '13px',
                 transition: 'color 0.2s ease'
               }}
-              onMouseEnter={(e) => e.target.style.color = '#C9A845'}
+              onMouseEnter={(e) => e.target.style.color = '#C9A227'}
               onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
               >
                 КЮДы
+              </Link>
+            </li>
+            <li style={{ marginBottom: '8px' }}>
+              <Link to="/achievements" style={{
+                color: 'rgba(255,255,255,0.7)',
+                textDecoration: 'none',
+                fontSize: '13px',
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.target.style.color = '#C9A227'}
+              onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
+              >
+                Достижения
+              </Link>
+            </li>
+          </ul>
+        </div>
+
+        {/* ЮРИДИЧЕСКАЯ ИНФОРМАЦИЯ */}
+        <div>
+          <h4 style={{
+            fontSize: '15px',
+            fontWeight: '700',
+            color: '#C9A227',
+            marginBottom: '12px'
+          }}>
+            📄 Юридическая информация
+          </h4>
+          <ul style={{
+            listStyle: 'none',
+            padding: 0,
+            margin: 0
+          }}>
+            <li style={{ marginBottom: '8px' }}>
+              <Link to="/legal/privacy-policy" style={{
+                color: 'rgba(255,255,255,0.7)',
+                textDecoration: 'none',
+                fontSize: '13px',
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.target.style.color = '#C9A227'}
+              onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
+              >
+                Политика обработки ПД
+              </Link>
+            </li>
+            <li style={{ marginBottom: '8px' }}>
+              <Link to="/legal/consent-personal-data" style={{
+                color: 'rgba(255,255,255,0.7)',
+                textDecoration: 'none',
+                fontSize: '13px',
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.target.style.color = '#C9A227'}
+              onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
+              >
+                Согласие на обработку ПД
+              </Link>
+            </li>
+            <li style={{ marginBottom: '8px' }}>
+              <Link to="/legal/consent-minor" style={{
+                color: 'rgba(255,255,255,0.7)',
+                textDecoration: 'none',
+                fontSize: '13px',
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.target.style.color = '#C9A227'}
+              onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
+              >
+                Согласие для несовершеннолетних
+              </Link>
+            </li>
+            <li style={{ marginBottom: '8px' }}>
+              <Link to="/legal/consent-image" style={{
+                color: 'rgba(255,255,255,0.7)',
+                textDecoration: 'none',
+                fontSize: '13px',
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.target.style.color = '#C9A227'}
+              onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
+              >
+                Согласие на использование изображения
               </Link>
             </li>
           </ul>
@@ -101,9 +184,9 @@ export default function Footer() {
         {/* КОНТАКТЫ */}
         <div>
           <h4 style={{
-            fontSize: '16px',
+            fontSize: '15px',
             fontWeight: '700',
-            color: '#C9A845',
+            color: '#C9A227',
             marginBottom: '12px'
           }}>
             📞 Контакты
@@ -125,9 +208,9 @@ export default function Footer() {
         {/* СОЦИАЛЬНЫЕ СЕТИ */}
         <div>
           <h4 style={{
-            fontSize: '16px',
+            fontSize: '15px',
             fontWeight: '700',
-            color: '#C9A845',
+            color: '#C9A227',
             marginBottom: '12px'
           }}>
             🌐 Мы в соцсетях
@@ -143,7 +226,7 @@ export default function Footer() {
               textDecoration: 'none',
               transition: 'color 0.2s ease'
             }}
-            onMouseEnter={(e) => e.target.style.color = '#C9A845'}
+            onMouseEnter={(e) => e.target.style.color = '#C9A227'}
             onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
             >
               📘
@@ -154,7 +237,7 @@ export default function Footer() {
               textDecoration: 'none',
               transition: 'color 0.2s ease'
             }}
-            onMouseEnter={(e) => e.target.style.color = '#C9A845'}
+            onMouseEnter={(e) => e.target.style.color = '#C9A227'}
             onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
             >
               📺
@@ -165,7 +248,7 @@ export default function Footer() {
               textDecoration: 'none',
               transition: 'color 0.2s ease'
             }}
-            onMouseEnter={(e) => e.target.style.color = '#C9A845'}
+            onMouseEnter={(e) => e.target.style.color = '#C9A227'}
             onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
             >
               📸
@@ -176,7 +259,7 @@ export default function Footer() {
               textDecoration: 'none',
               transition: 'color 0.2s ease'
             }}
-            onMouseEnter={(e) => e.target.style.color = '#C9A845'}
+            onMouseEnter={(e) => e.target.style.color = '#C9A227'}
             onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
             >
               💬
