@@ -1,14 +1,18 @@
-// src/pages/Dashboard.jsx
+// src/pages/Dashboard.jsx (добавьте приветствие для президента и вице-президента)
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Navigation from '../components/Navigation'
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null)
-  const [news, setNews] = useState([])
   const [loading, setLoading] = useState(true)
-  const navigate = useNavigate()
+  const [stats, setStats] = useState({
+    events: 0,
+    clubs: 0,
+    participants: 0,
+    achievements: 0
+  })
 
   useEffect(() => {
     loadData()
@@ -24,33 +28,64 @@ export default function Dashboard() {
           .eq('id', user.id)
           .single()
         setProfile(data)
-      }
-
-      const { data: newsData, error } = await supabase
-        .from('news')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(6)
-
-      if (!error) {
-        setNews(newsData || [])
+        await fetchStats(data?.role)
       }
     } catch (err) {
-      console.error('Ошибка загрузки:', err)
+      console.error('Ошибка:', err)
     }
     setLoading(false)
   }
 
-  const getRoleLabel = (role) => {
-    const map = {
-      'participant': 'Участник',
-      'parent': 'Родитель',
-      'club_coordinator': 'Координатор КЮДа',
-      'tutor': 'Тьютор',
-      'movement_coordinator': 'Координатор движения',
-      'admin': 'Администратор'
+  const fetchStats = async (role) => {
+    try {
+      if (role === 'president' || role === 'vice_president' || role === 'admin' || role === 'movement_coordinator') {
+        const { count: eventsCount } = await supabase
+          .from('events')
+          .select('*', { count: 'exact', head: true })
+        
+        const { count: clubsCount } = await supabase
+          .from('clubs')
+          .select('*', { count: 'exact', head: true })
+
+        const { count: participantsCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'participant')
+
+        setStats({
+          events: eventsCount || 0,
+          clubs: clubsCount || 0,
+          participants: participantsCount || 0,
+          achievements: 0
+        })
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки статистики:', err)
     }
-    return map[role] || role
+  }
+
+  const getRoleLabel = (role) => {
+    const roles = {
+      admin: 'Администратор',
+      participant: 'Участник',
+      parent: 'Родитель',
+      club_coordinator: 'Координатор КЮДа',
+      movement_coordinator: 'Координатор движения',
+      tutor: 'Тьютор',
+      president: '👑 Президент ДОД',
+      vice_president: '⭐ Вице-президент ДОД'
+    }
+    return roles[role] || role
+  }
+
+  const getGreeting = (role) => {
+    if (role === 'president') {
+      return '👑 Президент ДОД «Дипломаты будущего»'
+    }
+    if (role === 'vice_president') {
+      return '⭐ Вице-президент ДОД «Дипломаты будущего»'
+    }
+    return 'Добро пожаловать'
   }
 
   if (loading) {
@@ -61,161 +96,264 @@ export default function Dashboard() {
     )
   }
 
-  const quickActions = []
-
-  if (profile?.role === 'admin' || profile?.role === 'movement_coordinator' || profile?.role === 'club_coordinator') {
-    quickActions.push({ id: 'events', label: 'Мероприятия', icon: '📅', path: '/events', color: 'var(--color-blue)' })
-    quickActions.push({ id: 'clubs', label: 'КЮДы', icon: '🏛️', path: '/clubs', color: 'var(--color-navy)' })
-    quickActions.push({ id: 'participants', label: 'Участники', icon: '👤', path: '/participants', color: 'var(--color-blue)' })
-    quickActions.push({ id: 'achievements', label: 'Достижения', icon: '🏆', path: '/achievements', color: 'var(--color-gold)' })
-    if (profile?.role === 'admin' || profile?.role === 'movement_coordinator') {
-      quickActions.push({ id: 'analytics', label: 'Аналитика', icon: '📊', path: '/analytics', color: 'var(--color-blue)' })
-      quickActions.push({ id: 'settings', label: 'Настройки', icon: '⚙️', path: '/settings', color: 'var(--color-text-tertiary)' })
-    }
-  } else if (profile?.role === 'participant' || profile?.role === 'parent') {
-    quickActions.push({ id: 'events', label: 'Мероприятия', icon: '📅', path: '/events', color: 'var(--color-blue)' })
-    quickActions.push({ id: 'achievements', label: 'Достижения', icon: '🏆', path: '/achievements', color: 'var(--color-gold)' })
-  } else if (profile?.role === 'tutor') {
-    quickActions.push({ id: 'events', label: 'Мероприятия', icon: '📅', path: '/events', color: 'var(--color-blue)' })
-    quickActions.push({ id: 'clubs', label: 'КЮДы', icon: '🏛️', path: '/clubs', color: 'var(--color-navy)' })
-    quickActions.push({ id: 'participants', label: 'Участники', icon: '👤', path: '/participants', color: 'var(--color-blue)' })
-    quickActions.push({ id: 'achievements', label: 'Достижения', icon: '🏆', path: '/achievements', color: 'var(--color-gold)' })
-  }
-
   return (
-    <div className="fade-in">
+    <div className="fade-in" style={{ background: '#F4F6F9', minHeight: '100vh' }}>
       <Navigation profile={profile} />
       
-      <div className="container">
-        <div className="hero">
-          <h1>
-            Добро пожаловать,{' '}
-            <span className="hero-gold">{profile?.full_name}!</span>
-          </h1>
-          <p>{getRoleLabel(profile?.role)} • Система управления ДОД «Дипломаты будущего»</p>
-        </div>
-
-        <div className="grid-3" style={{ marginBottom: '32px' }}>
-          {quickActions.map((action) => (
-            <div
-              key={action.id}
-              className="card"
-              style={{
-                cursor: 'pointer',
-                borderTop: `3px solid ${action.color}`,
-                display: 'flex',
-                flexDirection: 'column'
-              }}
-              onClick={() => navigate(action.path)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)'
-                e.currentTarget.style.boxShadow = 'var(--shadow-lg)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = 'var(--shadow-md)'
-              }}
-            >
-              <div style={{ fontSize: '24px', marginBottom: '8px' }}>{action.icon}</div>
-              <h3 style={{ fontSize: '17px', fontWeight: '600', color: 'var(--color-navy)', marginBottom: '2px' }}>
-                {action.label}
-              </h3>
-              <p style={{ color: 'var(--color-text-tertiary)', fontSize: '14px', flex: 1 }}>
-                Перейти в раздел
-              </p>
-              <div style={{
-                marginTop: '12px',
-                fontSize: '13px',
-                color: action.color,
-                fontWeight: '500'
-              }}>
-                Перейти →
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ marginTop: '8px' }}>
+      <div className="container" style={{ paddingTop: '30px', maxWidth: '1200px', margin: '0 auto', padding: '30px 24px 40px' }}>
+        {/* HERO для президента и вице-президента */}
+        {profile?.role === 'president' && (
           <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '16px'
+            background: 'linear-gradient(135deg, #0B1F3A 0%, #C9A227 100%)',
+            borderRadius: '16px',
+            padding: '40px',
+            color: 'white',
+            marginBottom: '30px',
+            boxShadow: '0 4px 16px rgba(11, 31, 58, 0.1)'
           }}>
-            <div>
-              <h2 style={{ fontSize: '22px', fontWeight: '700', color: 'var(--color-navy)' }}>
-                Новости движения
-              </h2>
-              <p style={{ fontSize: '14px', color: 'var(--color-text-tertiary)' }}>
-                Главные события и новости ДОД «Дипломаты будущего»
-              </p>
-            </div>
-            <button
-              className="btn btn-secondary"
-              style={{ fontSize: '13px', padding: '6px 16px' }}
-              onClick={() => navigate('/')}
-            >
-              Все новости →
-            </button>
+            <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '4px' }}>
+              👑 Президент ДОД «Дипломаты будущего»
+            </h1>
+            <p style={{ fontSize: '18px', color: '#E8D9A8', marginBottom: '4px' }}>
+              Валерий Евгеньевич Егошкин
+            </p>
+            <p style={{ fontSize: '14px', opacity: 0.7 }}>
+              Чрезвычайный и Полномочный Посол
+            </p>
           </div>
+        )}
 
-          {news.length === 0 ? (
-            <div className="card" style={{ textAlign: 'center', padding: '32px' }}>
-              <p style={{ color: 'var(--color-text-tertiary)' }}>Новостей пока нет</p>
+        {profile?.role === 'vice_president' && (
+          <div style={{
+            background: 'linear-gradient(135deg, #0B1F3A 0%, #174A7E 100%)',
+            borderRadius: '16px',
+            padding: '40px',
+            color: 'white',
+            marginBottom: '30px',
+            boxShadow: '0 4px 16px rgba(11, 31, 58, 0.1)'
+          }}>
+            <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '4px' }}>
+              ⭐ Вице-президент ДОД «Дипломаты будущего»
+            </h1>
+            <p style={{ fontSize: '18px', color: '#EAF2FA', marginBottom: '4px' }}>
+              Борис Иванович Медведев
+            </p>
+            <p style={{ fontSize: '14px', opacity: 0.7 }}>
+              Чрезвычайный и Полномочный Посланник
+            </p>
+          </div>
+        )}
+
+        {/* Обычное приветствие для других ролей */}
+        {profile?.role !== 'president' && profile?.role !== 'vice_president' && (
+          <div style={{
+            background: 'linear-gradient(135deg, #0B1F3A 0%, #174A7E 100%)',
+            borderRadius: '16px',
+            padding: '30px',
+            color: 'white',
+            marginBottom: '30px'
+          }}>
+            <h1 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '4px' }}>
+              {getGreeting(profile?.role)}, {profile?.full_name || 'Пользователь'}!
+            </h1>
+            <p style={{ opacity: 0.7 }}>{getRoleLabel(profile?.role)}</p>
+          </div>
+        )}
+
+        {/* СТАТИСТИКА */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '16px',
+          marginBottom: '30px'
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            textAlign: 'center',
+            border: '1px solid #E2E7EF'
+          }}>
+            <div style={{ fontSize: '32px', fontWeight: '700', color: '#0B1F3A' }}>
+              {stats.clubs}
             </div>
-          ) : (
-            <div className="grid-news">
-              {news.slice(0, 6).map((item) => (
-                <div
-                  key={item.id}
-                  className="news-card"
-                  onClick={() => navigate('/')}
-                >
-                  {item.image_url && (
-                    <img
-                      src={item.image_url}
-                      alt={item.title}
-                      className="news-card-image"
-                      onError={(e) => {
-                        e.target.style.display = 'none'
-                      }}
-                    />
-                  )}
-                  <div className="news-card-body">
-                    <h4 className="news-card-title">{item.title}</h4>
-                    <p className="news-card-excerpt">
-                      {item.content && item.content.length > 100
-                        ? item.content.slice(0, 100) + '...'
-                        : item.content}
-                    </p>
-                    <div className="news-card-date">
-                      📅 {new Date(item.created_at).toLocaleDateString('ru-RU')}
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div style={{ fontSize: '14px', color: '#667085' }}>КЮДов</div>
+          </div>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            textAlign: 'center',
+            border: '1px solid #E2E7EF'
+          }}>
+            <div style={{ fontSize: '32px', fontWeight: '700', color: '#0B1F3A' }}>
+              {stats.participants}
             </div>
-          )}
+            <div style={{ fontSize: '14px', color: '#667085' }}>Участников</div>
+          </div>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            textAlign: 'center',
+            border: '1px solid #E2E7EF'
+          }}>
+            <div style={{ fontSize: '32px', fontWeight: '700', color: '#0B1F3A' }}>
+              {stats.events}
+            </div>
+            <div style={{ fontSize: '14px', color: '#667085' }}>Мероприятий</div>
+          </div>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            textAlign: 'center',
+            border: '1px solid #E2E7EF'
+          }}>
+            <div style={{ fontSize: '32px', fontWeight: '700', color: '#0B1F3A' }}>
+              {stats.achievements}
+            </div>
+            <div style={{ fontSize: '14px', color: '#667085' }}>Достижений</div>
+          </div>
         </div>
 
+        {/* БЫСТРЫЕ ССЫЛКИ */}
         <div style={{
-          marginTop: '32px',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
           gap: '16px'
         }}>
-          <div className="card" style={{ textAlign: 'center', padding: '16px' }}>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--color-navy)' }}>
-              {profile?.role || '—'}
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)' }}>Ваша роль</div>
-          </div>
-          <div className="card" style={{ textAlign: 'center', padding: '16px' }}>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--color-navy)' }}>
-              {new Date().toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)' }}>Текущий месяц</div>
-          </div>
+          <Link to="/clubs" style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            border: '1px solid #E2E7EF',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)'
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(11, 31, 58, 0.1)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.boxShadow = 'none'
+          }}
+          >
+            <div style={{ fontSize: '24px' }}>🏫</div>
+            <h3 style={{ fontSize: '16px', color: '#0B1F3A', margin: '8px 0 4px' }}>КЮДы</h3>
+            <p style={{ fontSize: '13px', color: '#667085' }}>Просмотр всех клубов</p>
+          </Link>
+
+          <Link to="/participants" style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            border: '1px solid #E2E7EF',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)'
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(11, 31, 58, 0.1)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.boxShadow = 'none'
+          }}
+          >
+            <div style={{ fontSize: '24px' }}>👥</div>
+            <h3 style={{ fontSize: '16px', color: '#0B1F3A', margin: '8px 0 4px' }}>Участники</h3>
+            <p style={{ fontSize: '13px', color: '#667085' }}>Просмотр всех участников</p>
+          </Link>
+
+          <Link to="/achievements" style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            border: '1px solid #E2E7EF',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)'
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(11, 31, 58, 0.1)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.boxShadow = 'none'
+          }}
+          >
+            <div style={{ fontSize: '24px' }}>🏆</div>
+            <h3 style={{ fontSize: '16px', color: '#0B1F3A', margin: '8px 0 4px' }}>Достижения</h3>
+            <p style={{ fontSize: '13px', color: '#667085' }}>Просмотр достижений</p>
+          </Link>
+
+          <Link to="/reports" style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            border: '1px solid #E2E7EF',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)'
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(11, 31, 58, 0.1)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.boxShadow = 'none'
+          }}
+          >
+            <div style={{ fontSize: '24px' }}>📋</div>
+            <h3 style={{ fontSize: '16px', color: '#0B1F3A', margin: '8px 0 4px' }}>Отчёты</h3>
+            <p style={{ fontSize: '13px', color: '#667085' }}>Просмотр отчётов</p>
+          </Link>
+
+          <Link to="/appeals" style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            border: '1px solid #E2E7EF',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)'
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(11, 31, 58, 0.1)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.boxShadow = 'none'
+          }}
+          >
+            <div style={{ fontSize: '24px' }}>📨</div>
+            <h3 style={{ fontSize: '16px', color: '#0B1F3A', margin: '8px 0 4px' }}>Обращения</h3>
+            <p style={{ fontSize: '13px', color: '#667085' }}>Просмотр обращений</p>
+          </Link>
+
+          <Link to="/analytics" style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            border: '1px solid #E2E7EF',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)'
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(11, 31, 58, 0.1)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.boxShadow = 'none'
+          }}
+          >
+            <div style={{ fontSize: '24px' }}>📊</div>
+            <h3 style={{ fontSize: '16px', color: '#0B1F3A', margin: '8px 0 4px' }}>Аналитика</h3>
+            <p style={{ fontSize: '13px', color: '#667085' }}>Просмотр аналитики</p>
+          </Link>
         </div>
       </div>
     </div>

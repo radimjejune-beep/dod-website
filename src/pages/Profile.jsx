@@ -314,10 +314,11 @@ export default function Profile() {
       admin: 'Администратор',
       participant: 'Участник',
       parent: 'Родитель',
-      coordinator: 'Координатор КЮДа',
       club_coordinator: 'Координатор КЮДа',
       movement_coordinator: 'Координатор движения',
-      tutor: 'Тьютор'
+      tutor: 'Тьютор',
+      president: '👑 Президент ДОД',
+      vice_president: '⭐ Вице-президент ДОД'
     }
     return roles[role] || role
   }

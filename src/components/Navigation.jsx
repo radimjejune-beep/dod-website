@@ -122,6 +122,32 @@ export default function Navigation({ profile }) {
         { path: '/staff-calendar', label: 'Календарь', roles: ['admin'] },
         { path: '/club-analytics', label: 'Аналитика клубов', roles: ['admin'] },
       ],
+
+      // ============================================
+      // ПРЕЗИДЕНТ ДОД
+      // ============================================
+      'president': [
+        { path: '/dashboard', label: '📊 Дашборд', roles: ['president'] },
+        { path: '/clubs', label: '🏫 КЮДы', roles: ['president'] },
+        { path: '/participants', label: '👥 Участники', roles: ['president'] },
+        { path: '/achievements', label: '🏆 Достижения', roles: ['president'] },
+        { path: '/reports', label: '📋 Отчёты', roles: ['president'] },
+        { path: '/appeals', label: '📨 Обращения', roles: ['president'] },
+        { path: '/analytics', label: '📊 Аналитика', roles: ['president'] },
+      ],
+
+      // ============================================
+      // ВИЦЕ-ПРЕЗИДЕНТ ДОД
+      // ============================================
+      'vice_president': [
+        { path: '/dashboard', label: '📊 Дашборд', roles: ['vice_president'] },
+        { path: '/clubs', label: '🏫 КЮДы', roles: ['vice_president'] },
+        { path: '/participants', label: '👥 Участники', roles: ['vice_president'] },
+        { path: '/achievements', label: '🏆 Достижения', roles: ['vice_president'] },
+        { path: '/reports', label: '📋 Отчёты', roles: ['vice_president'] },
+        { path: '/appeals', label: '📨 Обращения', roles: ['vice_president'] },
+        { path: '/analytics', label: '📊 Аналитика', roles: ['vice_president'] },
+      ],
     }
 
     let allItems = [...baseItems]
