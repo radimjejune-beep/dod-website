@@ -15,8 +15,18 @@ export default function ClubDetail() {
   const [canViewParticipants, setCanViewParticipants] = useState(false)
   const [president, setPresident] = useState(null)
   const [showPresidentForm, setShowPresidentForm] = useState(false)
+  const [showEditClubForm, setShowEditClubForm] = useState(false)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState('success')
+  const [clubForm, setClubForm] = useState({
+    name: '',
+    description: '',
+    city: '',
+    school: '',
+    contact_email: '',
+    contact_phone: '',
+    leader_name: ''
+  })
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -24,12 +34,9 @@ export default function ClubDetail() {
   }, [id])
 
   const loadData = async () => {
-    console.log('🔍 Загрузка клуба с ID:', id)
-    
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        console.log('❌ Пользователь не авторизован')
         setLoading(false)
         return
       }
@@ -39,56 +46,11 @@ export default function ClubDetail() {
         .select('*')
         .eq('id', user.id)
         .single()
-      
       setProfile(profileData)
-      console.log('👤 Профиль:', profileData)
 
       const role = profileData?.role
 
-      // ============================================================
-      // УПРОЩЕННЫЙ ЗАПРОС КЛУБА — БЕЗ ПРЕЗИДЕНТА (для проверки)
-      // ============================================================
-      console.log('🔍 Загружаем клуб...')
-      const { data: clubData, error: clubError } = await supabase
-        .from('clubs')
-        .select('*')
-        .eq('id', id)
-        .single()
-      
-      console.log('📌 Результат клуба:', clubData)
-      
-      if (clubError) {
-        console.log('❌ Ошибка загрузки клуба:', clubError)
-        setLoading(false)
-        return
-      }
-      
-      if (!clubData) {
-        console.log('❌ Клуб не найден')
-        setLoading(false)
-        return
-      }
-      
-      console.log('✅ Клуб загружен:', clubData.name)
-      setClub(clubData)
-
-      // ============================================================
-      // ЗАГРУЖАЕМ ПРЕЗИДЕНТА ОТДЕЛЬНО (если есть)
-      // ============================================================
-      if (clubData.president_id) {
-        const { data: presidentData } = await supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url, school, class_name')
-          .eq('id', clubData.president_id)
-          .single()
-        
-        setPresident(presidentData)
-        console.log('👑 Президент:', presidentData)
-      }
-
-      // ============================================================
-      // ПРОВЕРКА ПРАВ ДОСТУПА
-      // ============================================================
+      // Проверяем права доступа
       if (role === 'club_coordinator') {
         const { data: coordData } = await supabase
           .from('club_coordinators')
@@ -100,64 +62,162 @@ export default function ClubDetail() {
         if (coordData) {
           setIsCoordinator(true)
           setCanViewParticipants(true)
-          console.log('✅ Координатор подтвержден')
         } else {
-          console.log('❌ Координатор не привязан')
-          setCanViewParticipants(false)
+          setLoading(false)
+          return (
+            <div className="fade-in">
+              <Navigation profile={profileData} />
+              <div className="container" style={{ paddingTop: '50px', textAlign: 'center' }}>
+                <h1>⛔ Доступ запрещён</h1>
+                <p style={{ color: '#667085' }}>Вы можете просматривать только свой клуб</p>
+                <button className="btn btn-primary" onClick={() => navigate('/clubs')} style={{ marginTop: '20px' }}>
+                  Вернуться к списку
+                </button>
+              </div>
+            </div>
+          )
         }
       } else if (role === 'admin' || role === 'movement_coordinator') {
         setIsAdminOrMovementCoordinator(true)
         setCanViewParticipants(true)
-        console.log('✅ Администратор/Координатор движения')
       } else if (role === 'tutor') {
         setCanViewParticipants(true)
-        console.log('✅ Тьютор')
       } else if (role === 'participant' || role === 'parent') {
         setCanViewParticipants(false)
-        console.log('👤 Участник/Родитель')
       }
 
-      // ============================================================
-      // ЗАГРУЗКА УЧАСТНИКОВ
-      // ============================================================
+      // Загружаем информацию о клубе
+      const { data: clubData } = await supabase
+        .from('clubs')
+        .select(`
+          *,
+          president:president_id (id, full_name, avatar_url, school, class_name)
+        `)
+        .eq('id', id)
+        .single()
+      
+      if (!clubData) {
+        setLoading(false)
+        return
+      }
+      setClub(clubData)
+      setPresident(clubData.president)
+      
+      // Заполняем форму данными клуба
+      setClubForm({
+        name: clubData.name || '',
+        description: clubData.description || '',
+        city: clubData.city || '',
+        school: clubData.school || '',
+        contact_email: clubData.contact_email || '',
+        contact_phone: clubData.contact_phone || '',
+        leader_name: clubData.leader_name || ''
+      })
+
+      // Загружаем участников
       if (canViewParticipants) {
-        console.log('🔍 Загружаем участников...')
-        const { data: participantsData } = await supabase
+        const { data: participantsData, error } = await supabase
           .from('club_participants')
           .select(`
             profile_id,
+            status,
+            joined_at,
             profiles:profile_id (
               id,
               full_name,
+              email,
+              phone,
+              birth_date,
               school,
               class_name,
+              interests,
+              bio,
+              position,
+              status,
               avatar_url,
-              points,
-              status
+              points
             )
           `)
           .eq('club_id', id)
           .eq('status', 'active')
 
-        console.log('📌 Участники:', participantsData)
+        if (!error && participantsData) {
+          const participantsWithStats = await Promise.all(
+            (participantsData || []).map(async (item) => {
+              const p = item.profiles
+              if (!p) return null
 
-        if (participantsData) {
-          const formatted = participantsData.map(item => {
-            const p = item.profiles
-            return {
-              ...p,
-              achievementCount: 0,
-              eventCount: 0,
-              rating: p?.points || 0
-            }
-          })
-          setParticipants(formatted || [])
+              const { count: achievementsCount } = await supabase
+                .from('user_achievements')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', p.id)
+
+              const { count: eventsCount } = await supabase
+                .from('event_participants')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', p.id)
+                .eq('status', 'confirmed')
+
+              const points = p.points || 0
+              const rating = (achievementsCount || 0) * 10 + (eventsCount || 0) * 5 + points
+
+              return {
+                ...p,
+                achievementCount: achievementsCount || 0,
+                eventCount: eventsCount || 0,
+                points,
+                rating,
+                joined_at: item.joined_at
+              }
+            })
+          )
+
+          const validParticipants = participantsWithStats
+            .filter(p => p !== null)
+            .sort((a, b) => b.rating - a.rating)
+
+          setParticipants(validParticipants)
         }
       }
 
     } catch (err) {
-      console.log('❌ КРИТИЧЕСКАЯ ОШИБКА:', err)
-      console.error(err)
+      console.error('Ошибка загрузки данных:', err)
+    }
+    setLoading(false)
+  }
+
+  // ============================================================
+  // СОХРАНЕНИЕ ИНФОРМАЦИИ О КЛУБЕ
+  // ============================================================
+  const handleSaveClub = async (e) => {
+    e.preventDefault()
+    setMessage('')
+    setLoading(true)
+
+    try {
+      const { error } = await supabase
+        .from('clubs')
+        .update({
+          name: clubForm.name,
+          description: clubForm.description,
+          city: clubForm.city,
+          school: clubForm.school,
+          contact_email: clubForm.contact_email,
+          contact_phone: clubForm.contact_phone,
+          leader_name: clubForm.leader_name
+        })
+        .eq('id', id)
+
+      if (error) throw error
+
+      setMessage('✅ Информация о клубе обновлена!')
+      setMessageType('success')
+      setShowEditClubForm(false)
+      loadData()
+      setTimeout(() => setMessage(''), 3000)
+    } catch (err) {
+      setMessage('❌ Ошибка: ' + err.message)
+      setMessageType('error')
     }
     setLoading(false)
   }
@@ -191,6 +251,9 @@ export default function ClubDetail() {
     }
   }
 
+  // ============================================================
+  // УДАЛЕНИЕ ПРЕЗИДЕНТА
+  // ============================================================
   const handleRemovePresident = async () => {
     if (!confirm(`Снять ${president?.full_name} с должности президента?`)) return
 
@@ -214,26 +277,8 @@ export default function ClubDetail() {
     }
   }
 
+  const canManageClub = isCoordinator || isAdminOrMovementCoordinator
   const canManagePresident = isCoordinator || isAdminOrMovementCoordinator
-
-  const handleRemoveParticipant = async (profileId) => {
-    if (!confirm('Удалить участника из клуба?')) return
-
-    try {
-      const { error } = await supabase
-        .from('club_participants')
-        .delete()
-        .eq('club_id', id)
-        .eq('profile_id', profileId)
-
-      if (error) throw error
-      setParticipants(participants.filter(p => p.id !== profileId))
-    } catch (err) {
-      alert('Ошибка: ' + err.message)
-    }
-  }
-
-  const canEdit = isCoordinator || isAdminOrMovementCoordinator
 
   if (loading) {
     return (
@@ -250,12 +295,6 @@ export default function ClubDetail() {
         <div className="container" style={{ paddingTop: '50px', textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
           <h1 style={{ color: '#0B1F3A' }}>КЮД не найден</h1>
-          <p style={{ color: '#667085' }}>
-            ID: {id || 'не указан'}
-          </p>
-          <p style={{ color: '#98A2B3', fontSize: '14px', marginTop: '8px' }}>
-            Проверьте, что КЮД существует в базе данных
-          </p>
           <button className="btn btn-primary" onClick={() => navigate('/clubs')} style={{ marginTop: '20px' }}>
             ← Назад к списку
           </button>
@@ -303,7 +342,7 @@ export default function ClubDetail() {
           </div>
         )}
 
-        {/* Информация о клубе */}
+        {/* ===== ИНФОРМАЦИЯ О КЛУБЕ ===== */}
         <div style={{
           background: 'white',
           borderRadius: '16px',
@@ -319,6 +358,9 @@ export default function ClubDetail() {
               </h1>
               {club.description && (
                 <p style={{ color: '#667085', marginTop: '8px', fontSize: '15px' }}>{club.description}</p>
+              )}
+              {club.city && (
+                <p style={{ color: '#667085', fontSize: '14px', marginTop: '4px' }}>📍 {club.city}</p>
               )}
               <div style={{ display: 'flex', gap: '20px', marginTop: '12px', flexWrap: 'wrap' }}>
                 {canViewParticipants && (
@@ -352,29 +394,178 @@ export default function ClubDetail() {
                 )}
               </div>
             </div>
-            {canManagePresident && (
-              <button
-                style={{
-                  padding: '10px 24px',
-                  background: '#C9A227',
-                  color: '#0B1F3A',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => e.target.style.background = '#B8921F'}
-                onMouseLeave={(e) => e.target.style.background = '#C9A227'}
-                onClick={() => setShowPresidentForm(!showPresidentForm)}
-              >
-                {showPresidentForm ? '✖ Закрыть' : '👑 Назначить президента'}
-              </button>
-            )}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {canManageClub && (
+                <button
+                  style={{
+                    padding: '10px 24px',
+                    background: '#0B1F3A',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = '#174A7E'}
+                  onMouseLeave={(e) => e.target.style.background = '#0B1F3A'}
+                  onClick={() => setShowEditClubForm(!showEditClubForm)}
+                >
+                  {showEditClubForm ? '✖ Закрыть' : '✏️ Редактировать клуб'}
+                </button>
+              )}
+              {canManagePresident && (
+                <button
+                  style={{
+                    padding: '10px 24px',
+                    background: '#C9A227',
+                    color: '#0B1F3A',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = '#B8921F'}
+                  onMouseLeave={(e) => e.target.style.background = '#C9A227'}
+                  onClick={() => setShowPresidentForm(!showPresidentForm)}
+                >
+                  {showPresidentForm ? '✖ Закрыть' : '👑 Назначить президента'}
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Форма назначения президента */}
+          {/* ===== ФОРМА РЕДАКТИРОВАНИЯ КЛУБА ===== */}
+          {showEditClubForm && canManageClub && (
+            <div style={{
+              marginTop: '20px',
+              padding: '20px',
+              background: '#F8FAFC',
+              borderRadius: '12px',
+              border: '1px solid #E2E7EF'
+            }}>
+              <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#0B1F3A', marginBottom: '16px' }}>
+                ✏️ Редактировать информацию о КЮДе
+              </h4>
+              <form onSubmit={handleSaveClub}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Название КЮДа *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={clubForm.name}
+                      onChange={(e) => setClubForm({ ...clubForm, name: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Город</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={clubForm.city}
+                      onChange={(e) => setClubForm({ ...clubForm, city: e.target.value })}
+                      placeholder="Москва"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Школа/Организация</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={clubForm.school}
+                      onChange={(e) => setClubForm({ ...clubForm, school: e.target.value })}
+                      placeholder="Гимназия №4"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Руководитель</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={clubForm.leader_name}
+                      onChange={(e) => setClubForm({ ...clubForm, leader_name: e.target.value })}
+                      placeholder="Иванов Иван Иванович"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Контактный email</label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      value={clubForm.contact_email}
+                      onChange={(e) => setClubForm({ ...clubForm, contact_email: e.target.value })}
+                      placeholder="club@example.com"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Контактный телефон</label>
+                    <input
+                      type="tel"
+                      className="form-input"
+                      value={clubForm.contact_phone}
+                      onChange={(e) => setClubForm({ ...clubForm, contact_phone: e.target.value })}
+                      placeholder="+7 (XXX) XXX-XX-XX"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Описание КЮДа</label>
+                  <textarea
+                    className="form-input"
+                    rows="4"
+                    value={clubForm.description}
+                    onChange={(e) => setClubForm({ ...clubForm, description: e.target.value })}
+                    placeholder="Подробное описание клуба..."
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                  <button type="submit" className="btn btn-success" disabled={loading} style={{
+                    padding: '10px 24px',
+                    background: '#16845B',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '600'
+                  }}>
+                    {loading ? '⏳ Сохранение...' : '💾 Сохранить изменения'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowEditClubForm(false)}
+                    style={{
+                      padding: '10px 24px',
+                      background: 'transparent',
+                      color: '#0B1F3A',
+                      border: '1.5px solid #D5DCE7',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    ❌ Отмена
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* ===== ФОРМА НАЗНАЧЕНИЯ ПРЕЗИДЕНТА ===== */}
           {showPresidentForm && canManagePresident && (
             <div style={{
               marginTop: '20px',
@@ -503,7 +694,7 @@ export default function ClubDetail() {
           )}
         </div>
 
-        {/* Список участников */}
+        {/* ===== СПИСОК УЧАСТНИКОВ ===== */}
         {canViewParticipants && (
           <div style={{
             background: 'white',
@@ -518,10 +709,11 @@ export default function ClubDetail() {
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475467' }}>#</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475467' }}>ФИО</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475467' }}>Класс</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#475467' }}>Школа</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#475467' }}>🏆 Достижений</th>
                   <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#475467' }}>⭐ Баллы</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#475467' }}>Рейтинг</th>
                   <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#475467' }}>Статус</th>
-                  {canEdit && (
+                  {isCoordinator && (
                     <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: '#475467' }}>Действия</th>
                   )}
                 </tr>
@@ -529,7 +721,7 @@ export default function ClubDetail() {
               <tbody>
                 {participants.length === 0 ? (
                   <tr>
-                    <td colSpan={canEdit ? 7 : 6} style={{ padding: '40px', textAlign: 'center', color: '#667085' }}>
+                    <td colSpan={isCoordinator ? 8 : 7} style={{ padding: '40px', textAlign: 'center', color: '#667085' }}>
                       <div style={{ fontSize: '32px', marginBottom: '8px' }}>👀</div>
                       В этом КЮДе пока нет участников
                     </td>
@@ -585,9 +777,23 @@ export default function ClubDetail() {
                         </div>
                       </td>
                       <td style={{ padding: '12px 16px', color: '#667085' }}>{p.class_name || '—'}</td>
-                      <td style={{ padding: '12px 16px', color: '#667085' }}>{p.school || '—'}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center', color: '#667085' }}>
+                        {p.achievementCount || 0}
+                      </td>
                       <td style={{ padding: '12px 16px', textAlign: 'center', color: '#667085' }}>
                         {p.points || 0}
+                      </td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                        <span style={{
+                          background: p.rating >= 50 ? '#E8F5EF' : p.rating >= 20 ? '#FBF4DC' : '#FCEBEC',
+                          color: p.rating >= 50 ? '#16845B' : p.rating >= 20 ? '#8A6A00' : '#B3262E',
+                          padding: '4px 12px',
+                          borderRadius: '20px',
+                          fontWeight: 'bold',
+                          fontSize: '14px'
+                        }}>
+                          {p.rating}
+                        </span>
                       </td>
                       <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                         <span style={{
@@ -601,7 +807,7 @@ export default function ClubDetail() {
                           {p.status === 'active' ? '🟢 Активен' : '🔴 Неактивен'}
                         </span>
                       </td>
-                      {canEdit && (
+                      {isCoordinator && (
                         <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                           <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
                             <button
@@ -620,7 +826,7 @@ export default function ClubDetail() {
                             >
                               👁️ Профиль
                             </button>
-                            {isCoordinator && p.id !== president?.id && (
+                            {p.id !== president?.id && (
                               <button
                                 style={{
                                   padding: '4px 12px',
@@ -637,10 +843,10 @@ export default function ClubDetail() {
                                 onMouseLeave={(e) => e.target.style.background = '#FBF4DC'}
                                 onClick={() => handleAssignPresident(p.id)}
                               >
-                                👑 Назначить
+                                👑
                               </button>
                             )}
-                            {isCoordinator && p.id === president?.id && (
+                            {p.id === president?.id && (
                               <button
                                 style={{
                                   padding: '4px 12px',
@@ -657,26 +863,7 @@ export default function ClubDetail() {
                                 onMouseLeave={(e) => e.target.style.background = '#FCEBEC'}
                                 onClick={handleRemovePresident}
                               >
-                                🗑️ Снять
-                              </button>
-                            )}
-                            {canEdit && (
-                              <button
-                                style={{
-                                  padding: '4px 12px',
-                                  background: '#FCEBEC',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer',
-                                  fontSize: '13px',
-                                  color: '#B3262E',
-                                  transition: 'all 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.target.style.background = '#FCEBEC'}
-                                onMouseLeave={(e) => e.target.style.background = '#FCEBEC'}
-                                onClick={() => handleRemoveParticipant(p.id)}
-                              >
-                                🗑️ Удалить
+                                🗑️
                               </button>
                             )}
                           </div>
