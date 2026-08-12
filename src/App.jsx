@@ -19,9 +19,8 @@ import Legal from './pages/Legal'
 import AdminInvite from './pages/AdminInvite'
 import AdminUsers from './pages/AdminUsers'
 import ManageAchievements from './pages/ManageAchievements'
-import ClubRegistrationRequests from './pages/ClubRegistrationRequests'
-import RegistrationRequests from './pages/RegistrationRequests'
 import ImportParticipants from './pages/ImportParticipants'
+import Appeals from './pages/Appeals'
 import EventParticipants from './pages/EventParticipants'
 import StaffManagement from './pages/StaffManagement'
 import StaffCalendar from './pages/StaffCalendar'
@@ -92,6 +91,9 @@ function App() {
             <Route path="/president-tasks" element={
               <ProtectedRoute><PresidentTasks /></ProtectedRoute>
             } />
+            <Route path="/appeals" element={
+              <ProtectedRoute><Appeals /></ProtectedRoute>
+            } />
             <Route path="/analytics" element={
               <ProtectedRoute><DashboardAnalytics /></ProtectedRoute>
             } />
@@ -109,12 +111,6 @@ function App() {
             } />
             <Route path="/manage-achievements" element={
               <ProtectedRoute><ManageAchievements /></ProtectedRoute>
-            } />
-            <Route path="/club-registration-requests" element={
-              <ProtectedRoute><ClubRegistrationRequests /></ProtectedRoute>
-            } />
-            <Route path="/registration-requests" element={
-              <ProtectedRoute><RegistrationRequests /></ProtectedRoute>
             } />
             <Route path="/import-participants" element={
               <ProtectedRoute><ImportParticipants /></ProtectedRoute>

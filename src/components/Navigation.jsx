@@ -56,7 +56,7 @@ export default function Navigation({ profile }) {
         { path: '/my-reviews', label: '📊 Оценки клуба', roles: ['club_coordinator'] },
         { path: '/reports', label: 'Отчёты', roles: ['club_coordinator'] },
         { path: '/club-analytics', label: 'Аналитика клуба', roles: ['club_coordinator'] },
-        { path: '/club-registration-requests', label: '📋 Заявки клуба', roles: ['club_coordinator'] },
+        { path: '/appeals', label: '📨 Обращения', roles: ['club_coordinator'] },
         { path: '/staff', label: 'Сотрудники', roles: ['club_coordinator'] },
         { path: '/staff-calendar', label: 'Календарь', roles: ['club_coordinator'] },
       ],
@@ -92,8 +92,8 @@ export default function Navigation({ profile }) {
         { path: '/settings', label: 'Настройки', roles: ['movement_coordinator'] },
         { path: '/admin/invite', label: 'Пригласить', roles: ['movement_coordinator'] },
         { path: '/admin/users', label: '👥 Управление пользователями', roles: ['movement_coordinator'] },
-        { path: '/registration-requests', label: '📋 Одобрение доступа', roles: ['movement_coordinator'] },
         { path: '/import-participants', label: '📥 Импорт участников', roles: ['movement_coordinator'] },
+        { path: '/appeals', label: '📨 Обращения координаторов', roles: ['movement_coordinator'] },
         { path: '/staff', label: 'Сотрудники', roles: ['movement_coordinator'] },
         { path: '/staff-calendar', label: 'Календарь', roles: ['movement_coordinator'] },
         { path: '/club-analytics', label: 'Аналитика клубов', roles: ['movement_coordinator'] },
@@ -116,8 +116,8 @@ export default function Navigation({ profile }) {
         { path: '/settings', label: 'Настройки', roles: ['admin'] },
         { path: '/admin/invite', label: 'Пригласить', roles: ['admin'] },
         { path: '/admin/users', label: '👥 Управление пользователями', roles: ['admin'] },
-        { path: '/registration-requests', label: '📋 Одобрение доступа', roles: ['admin'] },
         { path: '/import-participants', label: '📥 Импорт участников', roles: ['admin'] },
+        { path: '/appeals', label: '📨 Обращения координаторов', roles: ['admin'] },
         { path: '/staff', label: 'Сотрудники', roles: ['admin'] },
         { path: '/staff-calendar', label: 'Календарь', roles: ['admin'] },
         { path: '/club-analytics', label: 'Аналитика клубов', roles: ['admin'] },
@@ -150,13 +150,13 @@ export default function Navigation({ profile }) {
       ['/events', '/calendar', '/participants'].includes(item.path)
     ),
     clubs: menuItems.filter(item => 
-      ['/clubs', '/club-analytics', '/my-reviews', '/achievements', '/manage-achievements', '/club-registration-requests'].includes(item.path)
+      ['/clubs', '/club-analytics', '/my-reviews', '/achievements', '/manage-achievements'].includes(item.path)
     ),
     settings: menuItems.filter(item => 
-      ['/settings', '/admin/invite', '/admin/users', '/registration-requests', '/import-participants', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
+      ['/settings', '/admin/invite', '/admin/users', '/import-participants', '/appeals', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
     ),
     other: menuItems.filter(item => 
-      !['/', '/profile', '/dashboard', '/events', '/calendar', '/participants', '/clubs', '/club-analytics', '/my-reviews', '/achievements', '/manage-achievements', '/club-registration-requests', '/settings', '/admin/invite', '/admin/users', '/registration-requests', '/import-participants', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
+      !['/', '/profile', '/dashboard', '/events', '/calendar', '/participants', '/clubs', '/club-analytics', '/my-reviews', '/achievements', '/manage-achievements', '/settings', '/admin/invite', '/admin/users', '/import-participants', '/appeals', '/staff', '/staff-calendar', '/reports', '/analytics'].includes(item.path)
     )
   }
 
